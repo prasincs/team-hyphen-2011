@@ -7,6 +7,7 @@ DB = require './DB'
 Constants = require('./public/common').Constants
 Game = require './public/game'
 GameManager = Game.GameManager
+Puzzle = Game.Puzzle
 
 server = require('http').createServer (req, resp) -> 
   req.addListener 'end', -> files.serve req, resp
@@ -18,7 +19,6 @@ server.listen port
 nowjs    = require 'now'
 everyone = nowjs.initialize(server) #, {socketio: {'log level': 1}})
 
-#require './generator/gen'
 
 idMap = {}
 plots = {}
@@ -29,7 +29,7 @@ everyone.now.addUser = (user, callback)->
 everyone.now.requestPlot= (difficulty) ->
   x = 1
   y = 0
-  puzzle = PuzzleGenerator.randomPuzzle(difficulty)
+  puzzle = new Puzzle()
   gm = new GameManager puzzle, x ,y
   everyone.now.startPlot(x, y, puzzle, @user.clientId)
   plots[idMap[@user.clientId]] = gm
