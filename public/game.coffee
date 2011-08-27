@@ -35,7 +35,7 @@ class Filter extends GridEntity
         super @position @orientation @type
 
 class Prism extends GridEntity
-    constructor: (@position, @orientation, @type, @color) ->
+    constructor: (@position, @orientation, @type) ->
         super @position @orientation @type
  
 class Laser
