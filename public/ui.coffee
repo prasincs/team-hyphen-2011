@@ -61,17 +61,18 @@ class Plot
 
     # display tool
     if !@manager.getEntityAt(x, y) and UI.tool
-      @[UI.tool](x,y)
+      @[UI.tool.toLowerCase()](x,y)
     
-  hackHandler : (e) ->
+  clickHandler : (e) ->
     [x, y] = @coordsToSquare e
-    seq = ['#ff0000', '#ffff00', '#00ffff', '#000000', '#0000ff']
     
-    @hacks["#{x}x#{y}"] = -1 if @hacks["#{x}x#{y}"] == undefined
-    @hacks["#{x}x#{y}"] += 1
-          
-    @bp.fillStyle = seq[@hacks["#{x}x#{y}"] % 5]
-    @bp.fillRect x*@scale, y*@scale, @scale, @scale
+    if entity = @manager.getEntityAt(x, y)
+      if e.which == 3 # right click
+        @manager.removeEntityAt(x, y)
+      else
+        @manager.rotateEntityClockwise(x, y)
+    else if UI.tool
+      @manager.addEntity(window[UI.tool])
       
 UI =
   zoomLevel : 1 # between 0 and 1 with 1 being max zoom level and 0.25 being 4x further away
@@ -107,12 +108,10 @@ UI =
         UI.mousedown = [e.pageX, e.pageY]
       true
     
-    $("#controls li").click (e) -> UI.tool = $(this).data("tool")
+    $("#palate li").click (e) -> UI.tool = $(this).data("tool")
   
   addPlot : (puzzle, $div) ->
     p = new Plot(puzzle, $div.find('.fg')[0], $div.find('.mg')[0], $div.find('.bg')[0])
-    $div.mousemove (e) -> 
-      p.hoverHandler(e) or true
-    $div.mouseup (e) ->
-      p.hackHandler(e) or true
+    $div.mousemove (e) -> p.hoverHandler(e) or true
+    $div.mouseup (e) -> p.clickHandler(e) or true
     @plots.push p

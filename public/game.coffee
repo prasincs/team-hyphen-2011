@@ -74,8 +74,8 @@ class GameManager
 
         Directions =
             N: 0
-            S: 1
-            E: 2
+            E: 1
+            S: 2
             W: 3
 
         dir = null
@@ -87,21 +87,12 @@ class GameManager
             dir = (dir - 1) % 4
 
         move = () ->
-            switch dir
-                when Directions.N
-                    currentPos = [currentPos[0] - 1, currentPos[1]]
-                when Directions.S
-                    currentPos = [currentPos[0], currentPos[1] + 1]
-                when Directions.E
-                    currentPos = [currentPos[0] - 1, currentPos[1]]
-                when Directions.W
-                    currentPos = [currentPos[0] + 1, currentPos[1]]
-
+          [ (currentPos[0]    % 2)*(currentPos[0] - 2),
+           ((currentPos[1]+1) % 2)*(currentPos[1] - 1)]
 
         while i < laser.chain.length
             entityOnSpace = @board.getAt(currentPos[0], currentPos[1])
-            if entityOnSpace 
-                i = += 1
+            i += 1 if entityOnSpace
             
             # Reached the end successfully
             if entityOnSpace.type is Constants.EntityType.END
@@ -109,7 +100,7 @@ class GameManager
                 break
             else if not entityOnSpace.accept(laser)
                 break
-            else
+            else 
                 if entityOnSpace
                     switch entityOnSpace.type
                         when Constants.EntityType.MIRROR
