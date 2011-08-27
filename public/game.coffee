@@ -89,7 +89,7 @@ class GameManager
         move = () ->
             switch dir
                 when Directions.N
-                    currentPos = [currentPos[0] - 1, currentPos[1]]
+                    currentPos = [currentPos[0], currentPos[1] - 1]
                 when Directions.S
                     currentPos = [currentPos[0], currentPos[1] + 1]
                 when Directions.E
@@ -101,7 +101,7 @@ class GameManager
         while i < laser.chain.length
             entityOnSpace = @board.getAt(currentPos[0], currentPos[1])
             if entityOnSpace 
-                i = += 1
+                i += 1
             
             # Reached the end successfully
             if entityOnSpace.type is Constants.EntityType.END
