@@ -58,6 +58,10 @@ class GameManager
         
         results = [walkLaser(laser) for laser in @board.lasers]
 
+        # For now, just take the win condition to be 'all lasers reaching an end state through valid moves'
+        finalResult = true
+        finalResult = (finalResult &= result for result in results)
+
     walkLaser: (laser) ->
         start = laser.chain[0]
         end = laser.chain[laser.chain.length - 1]
