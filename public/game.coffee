@@ -355,3 +355,12 @@ class LaserSegment
     constructor: (@start, @end, @laser, @direction) ->
         if @start.type is Constants.EntityType.START
             @direction = @start.direction
+
+exports ?= {}
+exports.GameManager = GameManager
+exports.LaserSegment = LaserSegment
+exports.Board = Board
+exports.Puzzle = Puzzle
+exports.Laser = Laser
+exports.Prism = Prism
+

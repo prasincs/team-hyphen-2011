@@ -19,4 +19,19 @@ DB = require './DB'
 
 everyone.now.addUser = (user, callback)->
   DB.users.addUser user, callback
+Constants = require ('./public/common').Constants
+console.log Constants
+#require './public/game'
+#require './generator/gen'
+
+idMap = {}
+plots = {}
+
+everyone.now.requestPlot= (difficulty) ->
+  x = 1
+  y = 0
+  puzzle = PuzzleGenerator.randomPuzzle(difficulty)
+  #gm = new GameManager (puzzle, x ,y)
+  everyone.now.startPlot(x, y, puzzle, @user.clientId)
+  #plots[idMap[@user.clientId]] = gm
 

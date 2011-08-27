@@ -24,3 +24,5 @@ Constants =
         END: 5
         START: 6
 
+exports ?= {}
+exports.Constants = Constants
