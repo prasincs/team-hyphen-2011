@@ -4,7 +4,7 @@
         <meta http-equiv="Content-type" content="text/html; charset=utf-8">
         <title>We need a title</title>
         <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js" type="text/javascript" charset="utf-8"></script>
-        <!-- script src="nowjs/now.js" type="text/javascript" charset="utf-8"></script -->
+        <script src="nowjs/now.js" type="text/javascript" charset="utf-8"></script>
         <script src="dragdealer.js" type="text/javascript" charset="utf-8"></script>
         <script src="jquery.mousewheel.js" type="text/javascript" charset="utf-8"></script>
         <script src="common.js" type="text/javascript" charset="utf-8"></script>
@@ -49,7 +49,9 @@
                 
             }
         
-            .fg { z-index: 12; }
+            .fg { z-index: 12; background: rgba(0,0,0,0.15);}
+            .local .fg {background: transparent;}
+            
             .mg { z-index: 11; }
             .bg { z-index: 10; }
         
