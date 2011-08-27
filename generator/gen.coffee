@@ -76,13 +76,39 @@ pickRandomPoints = (size,blocked,number=10) ->
         if (point+'') not in blockedStrs then points.push(point)
     points
 
+assignDirections = (start,end,points) ->
+    points.unshift(start)
+    points.push(end)
+    mirrors = []
+    for [x,y,d],i in points[1...(points.length-1)]
+        [prev,next] = [points[i],points[i+2]]
+        if d is 'h' then [prev,next] = [next,prev]
+        if prev[0] < x and next[1] < y
+            #   n
+            # p /
+            mirrors.push([x,y,'nw'])
+        if prev[0] > x and next[1] < y
+            # n
+            # \ p
+            mirrors.push([x,y,'ne'])
+        if prev[0] < x and next[1] > y
+            # p \
+            #   n
+            mirrors.push([x,y,'sw'])
+        if prev[0] > x and next[1] > y
+            # / p
+            # n
+            mirrors.push([x,y,'se'])
+    mirrors
+
 genBoard = (n=2,size=10) ->
     board = [["_" for i in [0...10]] for j in [0...10]]
     startPoint = [-1,5,'h']
     endPoint = [10,2,'h']
     [points,blocked] = pickPoints(startPoint,endPoint,size,n)
+    mirrors = assignDirections(startPoint,endPoint,points)
     blocks = pickRandomPoints(size,blocked,number=30)
-    [startPoint,points,blocks,endPoint]
+    [startPoint,mirrors,blocks,endPoint]
 
 class AsciiBoard
     constructor: (size) ->
@@ -93,7 +119,13 @@ class AsciiBoard
         catch e
             console.log(x + " " + y + " " + c)
             throw e
-    addMirror: (x,y) -> @set(x,y,'/')
+    addMirror: (x,y,d) ->
+        switch d
+            when 'ne' then @set(x,y,'\\')
+            when 'sw' then @set(x,y,'\\')
+            when 'nw' then @set(x,y,'/')
+            when 'se' then @set(x,y,'/')
+            else throw "direction should be one of ne,nw,se,sw"
     addBlock:  (x,y) -> @set(x,y,'#')
     setStart:  ([x,y,d]) -> @set(x,y,'s')
     setEnd:    ([x,y,d]) -> @set(x,y,'e')
@@ -102,8 +134,9 @@ class AsciiBoard
         for i in [0...@board.length]
             console.log(@board[i].join(' '))
     addMirrors: (mirrorList) ->
+        console.log(mirrorList.length)
         for [x,y,d] in mirrorList
-            @addMirror(x,y)
+            @addMirror(x,y,d)
 
 
 drawBoard = () ->
@@ -122,6 +155,10 @@ drawBoard = () ->
         console.log(end)
         console.log(generated)
         console.log(blocked)
+
+toBoard = ->
+    size = 10
+    b = new Board(size)
 
 drawBoard()
 

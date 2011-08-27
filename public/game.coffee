@@ -193,9 +193,9 @@ class Mirror extends GridEntity
     accepts: (laser) -> true
 
 class Block extends GridEntity
-    constructor: (@position, @orientation, @mobility) ->
+    constructor: (@position) ->
         @type = Constants.EntityType.BLOCK
-        super(@position, @orientation, @mobility)
+        super(@position, 1, false)
 
     accepts: (laser) -> false
         
