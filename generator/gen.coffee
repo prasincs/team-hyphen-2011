@@ -10,7 +10,7 @@ dedupedLength = (arr) ->
 randIntExclude = (range,excluded) ->
     result = randInt(range - (dedupedLength excluded))
     for i in excluded
-        if result >= i then result += 1
+        if result >= i and i >= 0 then result += 1
     if result < 0 then throw "randIntExclude < 0... " + result + " " + range
     result
 
@@ -76,13 +76,39 @@ pickRandomPoints = (size,blocked,number=10) ->
         if (point+'') not in blockedStrs then points.push(point)
     points
 
+assignDirections = (start,end,points) ->
+    points.unshift(start)
+    points.push(end)
+    mirrors = []
+    for [x,y,d],i in points[1...(points.length-1)]
+        [prev,next] = [points[i],points[i+2]]
+        if d is 'h' then [prev,next] = [next,prev]
+        if prev[0] < x and next[1] < y
+            #   n
+            # p /
+            mirrors.push([x,y,'nw'])
+        if prev[0] > x and next[1] < y
+            # n
+            # \ p
+            mirrors.push([x,y,'ne'])
+        if prev[0] < x and next[1] > y
+            # p \
+            #   n
+            mirrors.push([x,y,'sw'])
+        if prev[0] > x and next[1] > y
+            # / p
+            # n
+            mirrors.push([x,y,'se'])
+    mirrors
+
 genBoard = (n=2,size=10) ->
     board = [["_" for i in [0...10]] for j in [0...10]]
     startPoint = [-1,5,'h']
     endPoint = [10,2,'h']
     [points,blocked] = pickPoints(startPoint,endPoint,size,n)
+    mirrors = assignDirections(startPoint,endPoint,points)
     blocks = pickRandomPoints(size,blocked,number=30)
-    [startPoint,points,blocks,endPoint]
+    [startPoint,mirrors,blocks,endPoint]
 
 class AsciiBoard
     constructor: (size) ->
@@ -93,7 +119,13 @@ class AsciiBoard
         catch e
             console.log(x + " " + y + " " + c)
             throw e
-    addMirror: (x,y) -> @set(x,y,'/')
+    addMirror: (x,y,d) ->
+        switch d
+            when 'ne' then @set(x,y,'\\')
+            when 'sw' then @set(x,y,'\\')
+            when 'nw' then @set(x,y,'/')
+            when 'se' then @set(x,y,'/')
+            else throw "direction should be one of ne,nw,se,sw"
     addBlock:  (x,y) -> @set(x,y,'#')
     setStart:  ([x,y,d]) -> @set(x,y,'s')
     setEnd:    ([x,y,d]) -> @set(x,y,'e')
@@ -102,8 +134,9 @@ class AsciiBoard
         for i in [0...@board.length]
             console.log(@board[i].join(' '))
     addMirrors: (mirrorList) ->
+        console.log(mirrorList.length)
         for [x,y,d] in mirrorList
-            @addMirror(x,y)
+            @addMirror(x,y,d)
 
 
 drawBoard = () ->
@@ -122,6 +155,23 @@ drawBoard = () ->
         console.log(end)
         console.log(generated)
         console.log(blocked)
+
+makeBoard = () ->
+    size = 10
+    b = new Board(size)
+    [[sX,sY,sD],mirrors,blocks,[eX,eY,eD]] = genBoard(n=4,size=size)
+    for [x,y,d] in mirrors
+        orientmap = {nw:1 ,ne:2 ,se:3, sw:4}
+        mirror = new Mirror([x,y],orientmap[d],false)
+        b.add(mirror)
+    for [x,y] in blocks
+        block = new Block([x,y])
+        b.add(block)
+    d = if sD is 'h' then if sY is -1 then 'left' else 'right' else if sX is -1 then 'down' else 'up'
+    b.add(new Startpoint([sX,sY]),d)
+    d = if eD is 'h' then if eY is -1 then 'left' else 'right' else if eX is -1 then 'down' else 'up'
+    b.add(new Endpoint([eX,eY]),d)
+    b
 
 drawBoard()
 
