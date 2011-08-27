@@ -60,8 +60,8 @@ class Plot
   coordsToSquare : (e) ->
     offset = $(@front).offset()
     
-    [Math.floor((e.pageX - offset.left)/@scale),
-     Math.floor((e.pageY - offset.top)/@scale)]
+    [Math.floor((e.pageX - offset.left)/@scale/UI.zoomLevel),
+     Math.floor((e.pageY - offset.top)/@scale/UI.zoomLevel)]
 
   clearLast : () ->
     if @lastMouseMove
@@ -70,6 +70,8 @@ class Plot
 
   hoverHandler : (e) ->
     @clearLast()
+
+    return if UI.zoomLevel < 0.25
 
     @lastMouseMove = [x,y] = @coordsToSquare e
         
@@ -82,6 +84,8 @@ class Plot
       @[UI.tool.toLowerCase()](new (window[UI.tool])([x,y], 1, true))
     
   clickHandler : (e) ->
+    return if UI.zoomLevel < 0.25
+    
     [x, y] = @coordsToSquare e
     
     if entity = @manager.getEntityAt(x, y)
@@ -133,8 +137,8 @@ UI =
     $(document).mousemove (e) =>
       if @mousedown
         # pan, TODO: make this scale properly
-        @topLeft[0] += e.pageX - @mousedown[0]
-        @topLeft[1] += e.pageY - @mousedown[1]
+        @topLeft[0] += (e.pageX - @mousedown[0]) / @zoomLevel
+        @topLeft[1] += (e.pageY - @mousedown[1]) / @zoomLevel
         @reposition()
         @mousedown = [e.pageX, e.pageY]
       true
@@ -146,15 +150,21 @@ UI =
         @zoomLevel /= 1.2
       
       @zoomLevel = Math.max(0.1, Math.min(1, @zoomLevel))
+      
+      if @zoomLevel < 0.25
+        $("#palate").fadeOut()
+      else
+        $("#palate").fadeIn()
         
       @reposition("#{e.pageX}px #{e.pageY}px")
       
     
     $("#palate li").click (e) -> UI.tool = $(this).data("tool")
   
-  addPlot : (puzzle, $div) ->
+  addPlot : (puzzle, $div, interactive) ->
     p = new Plot(puzzle, $div.find('.fg')[0], $div.find('.mg')[0], $div.find('.bg')[0])
-    $div.mousemove (e) -> p.hoverHandler(e) or true
-    $div.mouseup (e)   -> p.clickHandler(e) or true
-    $div.mouseout (e)  -> p.clearLast()     or true
+    if interactive
+      $div.mousemove (e) -> p.hoverHandler(e) or true
+      $div.mouseup (e)   -> p.clickHandler(e) or true
+      $div.mouseout (e)  -> p.clearLast()     or true
     @plots.push p
