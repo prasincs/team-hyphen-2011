@@ -125,10 +125,11 @@ UI =
   container : false
   tool      : false
   worldDims : [2500, 2500]
+  localPlot : false
       
   draw : ->
-    for plotRow in @plots
-      for plot in plotRow
+    for row in @plots when row
+      for plot in row when plot
         plot.drawTiles()
         plot.drawEntities()
   
@@ -168,8 +169,8 @@ UI =
         $("#palate").fadeIn()
         
       $("canvas").attr width: 500*@zoomLevel, height: 500*@zoomLevel
-      for row in @plots
-        for plot in row
+      for row in @plots when row
+        for plot in row when plot
           plot.resize()
           d = 500 * @zoomLevel
           $(plot.front).parent().css left: "#{d*plot.manager.gridX}px", top: "#{d*plot.manager.gridY}px"
@@ -178,11 +179,10 @@ UI =
     
     $("#palate li").click (e) -> UI.tool = $(this).data("tool")
   
-  addPlot : (manager, $div = false, interactive = false) ->
-    unless $div
-      $div = $("<div/>").addClass("plot").appendTo($("#map"))
-      for cls in ['bg', 'mg', 'fg']
-        $div.append $("<canvas/>").attr(width: 500, height: 500).addClass("#{cls}")
+  addPlot : (manager, interactive = false) ->
+    $div = $("<div/>").addClass("plot").appendTo($("#map"))
+    for cls in ['bg', 'mg', 'fg']
+      $div.append $("<canvas/>").attr(width: 500, height: 500).addClass("#{cls}")
     
     fg = $div.find('.fg')[0]
     mg = $div.find('.mg')[0]
@@ -190,7 +190,9 @@ UI =
     
     p = new Plot(manager, fg, mg, bg)
     
-    if false and interactive
+    if interactive
+      @localPlot.unbind().removeClass("local") if @localPlot
+      @localPlot = $div.addClass("local")
       $div.mousemove (e) -> p.hoverHandler(e) or true
       $div.mouseup   (e) -> p.clickHandler(e) or true
       $div.mouseout  (e) -> p.clearLast()     or true
