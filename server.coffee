@@ -36,6 +36,8 @@ assignPlot = (x,y, u)->
   usedPlots[x+","+y] = u.clientId #get from database
 
 userPlot = (u, assign = false) ->
+  if assign
+    assignPlot assign.gridX, assign.gridY, u
   plots[idMap[u.clientId]] = assign if assign
   plots[idMap[u.clientId]]
 
@@ -63,12 +65,6 @@ getNewPlot = ->
       plot = [x+nextDir, y+nextDir]
   lastPlot
 
-
-
-
-
-everyone.now.addUser = (user, callback)->
-  DB.users.addUser user, callback
 
 everyone.now.requestPlot = (difficulty) ->
   [x,y] = getNewPlot()
