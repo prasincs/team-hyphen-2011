@@ -96,7 +96,7 @@ class Plot
     
 UI =
   zoomLevel : 1 # between 0 and 1 with 1 being max zoom level and 0.25 being 4x further away
-  center    : [0, 0]
+  topLeft   : [0, 0]
   plots     : []
   container : false
   mousedown : false
@@ -107,22 +107,36 @@ UI =
       plot.drawTiles()
   
   
+  reposition : (origin = false) ->
+    [x, y] = @topLeft
+    x = Math.max(x, 0)
+    y = Math.max(y, 0)
+    
+    for prefix in ['', '-o-', '-moz-', '-webkit-', '-ms-']
+      @container.css "#{prefix}transform-origin", origin if origin
+      @container.css "#{prefix}transform", "scale(#{@zoomLevel}) translate(#{x}px, #{y}px)"
+  
+  
   installHandlers : ->
     $(document).mousedown (e) ->
       UI.mousedown = [e.pageX, e.pageY]
+      
     $(document).mouseup (e) ->
       UI.mousedown = false
+      
+    $(document).bind 'contextmenu', -> false
       
     $(document).mousemove (e) =>
       if @mousedown
         # pan
-        @center[0] += e.pageX - @mousedown[0]
-        @center[1] += e.pageY - @mousedown[1]
-        UI.mousedown = [e.pageX, e.pageY]
+        @topLeft[0] += e.pageX - @mousedown[0]
+        @topLeft[1] += e.pageY - @mousedown[1]
+        @reposition()
+        @mousedown = [e.pageX, e.pageY]
       true
       
     $(document).mousewheel (e, delta) ->
-      # FUCK ZOOMING
+      
     
     $("#palate li").click (e) -> UI.tool = $(this).data("tool")
   
