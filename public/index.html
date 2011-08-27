@@ -4,11 +4,38 @@
     <meta http-equiv="Content-type" content="text/html; charset=utf-8">
     <title>We need a title</title>
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js" type="text/javascript" charset="utf-8"></script>
-    <script src="/nowjs/now.js" type="text/javascript" charset="utf-8"></script>
+    <!-- script src="/nowjs/now.js" type="text/javascript" charset="utf-8"></script -->
     <!-- script src="/game.js" type="text/javascript" charset="utf-8"></script -->
-    <script src="/ui.js"   type="text/javascript" charset="utf-8"></script>
+    <script src="ui.js" type="text/javascript" charset="utf-8"></script>
+    <script src="controller.js" type="text/javascript" charset="utf-8"></script>
+    
+    <style>
+        .fg, .bg {
+            background : transparent;
+            position   : absolute;
+            top        : 0;
+            left       : 0;
+        }
+        
+        .fg { z-index: 11; }
+        .bg { z-index: 10; }
+        
+        .plot {
+            width: 500px;
+            height: 500px;
+            clear: both;
+            margin: 0; padding: 0; border: none;
+        }
+    </style>
     
   </head>
   <body>
+      <div id="map">
+        <!-- We'll dynamically resize this. -->
+        <div class="plot" id="interactive-plot">
+            <canvas class="bg" width="500" height="500"></canvas>
+            <canvas class="fg" width="500" height="500"></canvas>
+        </div>
+      </div>
   </body>
 </html>
