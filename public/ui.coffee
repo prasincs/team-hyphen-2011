@@ -1,16 +1,21 @@
 class Plot
   
   constructor : (@manager, @front, @mid, @back) ->
-    @fp = @front.getContext '2d'
-    @mp = @mid.getContext '2d'
-    @bp = @back.getContext '2d'
+    @fp  = @front.getContext '2d'
+    @mp  = @mid.getContext '2d'
+    @bp  = @back.getContext '2d'
+    @pen = @mp
+    @resize()
+    
+  resize : ->
     @size  = @front.height
     @scale = @size / 10.0
-    @pen = @mp
   
   drawTiles : ->
     @bp.fillStyle = '#999999'
     @bp.fillRect 0, 0, @size, @size
+    
+    console.log "Drawing tiles for", @front
     
     @bp.fillStyle = '#cccccc'
     for x in [0..10]
@@ -71,7 +76,7 @@ class Plot
   hoverHandler : (e) ->
     @clearLast()
 
-    return if UI.zoomLevel < 0.25
+    return if UI.zoomLevel < 0.5
 
     @lastMouseMove = [x,y] = @coordsToSquare e
         
@@ -84,7 +89,7 @@ class Plot
       @[UI.tool.toLowerCase()](new (window[UI.tool])([x,y], 1, true))
     
   clickHandler : (e) ->
-    return if UI.zoomLevel < 0.25
+    return if UI.zoomLevel < 0.5
     
     [x, y] = @coordsToSquare e
     
@@ -103,13 +108,13 @@ UI =
   topLeft   : [0, 0]
   plots     : []
   container : false
-  mousedown : false
   tool      : false
   worldDims : [2500, 2500]
       
   draw : ->
-    for plot in @plots
-      plot.drawTiles()
+    for plotRow in @plots
+      for plot in plotRow
+        plot.drawTiles()
   
   
   reposition : (origin = false) ->
@@ -126,23 +131,13 @@ UI =
   
   
   installHandlers : ->
-    $(document).mousedown (e) ->
-      UI.mousedown = [e.pageX, e.pageY]
-      
-    $(document).mouseup (e) ->
-      UI.mousedown = false
       
     $(document).bind 'contextmenu', -> false
-      
-    $(document).mousemove (e) =>
-      if @mousedown
-        # pan, TODO: make this scale properly
-        @topLeft[0] += (e.pageX - @mousedown[0]) / @zoomLevel
-        @topLeft[1] += (e.pageY - @mousedown[1]) / @zoomLevel
-        @reposition()
-        @mousedown = [e.pageX, e.pageY]
-      true
-      
+
+    $("#wrapper").addClass("dragdealer")      
+    $("#map").addClass('handle')
+    d = new Dragdealer 'wrapper', vertical: true
+
     $(document).mousewheel (e, delta) =>
       if delta > 0
         @zoomLevel *= 1.2
@@ -151,20 +146,39 @@ UI =
       
       @zoomLevel = Math.max(0.1, Math.min(1, @zoomLevel))
       
-      if @zoomLevel < 0.25
+      if @zoomLevel < 0.5
         $("#palate").fadeOut()
       else
         $("#palate").fadeIn()
         
-      @reposition("#{e.pageX}px #{e.pageY}px")
+      $("canvas").attr width: 500*@zoomLevel, height: 500*@zoomLevel
+      for row in @plots
+        for plot in row
+          plot.resize()
+          d = 500 * @zoomLevel
+          $(plot.front).parent().css left: "#{d*plot.manager.gridX}px", top: "#{d*plot.manager.gridY}px"
+      @draw()
       
     
     $("#palate li").click (e) -> UI.tool = $(this).data("tool")
   
-  addPlot : (puzzle, $div, interactive) ->
-    p = new Plot(puzzle, $div.find('.fg')[0], $div.find('.mg')[0], $div.find('.bg')[0])
-    if interactive
+  addPlot : (manager, $div = false, interactive = false) ->
+    unless $div
+      $div = $("<div/>").addClass("plot").appendTo($("#map"))
+      for cls in ['bg', 'mg', 'fg']
+        $div.append $("<canvas/>").attr(width: 500, height: 500).addClass("#{cls}")
+    
+    fg = $div.find('.fg')[0]
+    mg = $div.find('.mg')[0]
+    bg = $div.find('.bg')[0]
+    
+    p = new Plot(manager, fg, mg, bg)
+    
+    if false and interactive
       $div.mousemove (e) -> p.hoverHandler(e) or true
-      $div.mouseup (e)   -> p.clickHandler(e) or true
-      $div.mouseout (e)  -> p.clearLast()     or true
-    @plots.push p
+      $div.mouseup   (e) -> p.clickHandler(e) or true
+      $div.mouseout  (e) -> p.clearLast()     or true
+    
+    (@plots[manager.gridX] ?= [])[manager.gridY] = p
+    
+    $div.css left: "#{p.size*manager.gridX}px", top: "#{p.size*manager.gridY}px"
