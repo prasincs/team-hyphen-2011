@@ -1,19 +1,19 @@
 static = require 'node-static'
-nko = require('nko')('3K5CfNDu8AAVXRy3')
+nko    = require('nko')('3K5CfNDu8AAVXRy3')
 files  = new static.Server('./public')
 
-DB = require './DB'
-
-Constants = require('./public/common').Constants
-Game = require './public/game'
+DB          = require './DB'
+Constants   = require('./public/common').Constants
+Game        = require './public/game'
 GameManager = Game.GameManager
 Puzzle = Game.Puzzle
 GridEntity = Game.GridEntity
+Puzzle      = Game.Puzzle
 
 server = require('http').createServer (req, resp) -> 
   req.addListener 'end', -> files.serve req, resp
 
-port = if process.env.NODE_ENV == 'production' then 80  else 8000
+port = if process.env.NODE_ENV == 'production' then 80 else 8000
 
 server.listen port
 
