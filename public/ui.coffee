@@ -1,8 +1,9 @@
 class Plot
   hacks : {}
   
-  constructor : (@puzzle, @front, @back) ->
+  constructor : (@manager, @front, @mid, @back) ->
     @fp = @front.getContext '2d'
+    @mp = @mid.getContext '2d'
     @bp = @back.getContext '2d'
     @size  = @front.height
     @scale = @size / 10.0
@@ -15,8 +16,32 @@ class Plot
     for x in [0..10]
       for y in [x%2..10] by 2
         @bp.fillRect x*@scale, y*@scale, @scale, @scale
-        
-  #drawStatic : ->
+
+  block : (x, y) ->
+    @mp.fillStyle = "#000000"
+    @mp.fillRect x*@scale + 4, y*@scale + 4, @scale - 8, @scale - 8
+    
+  mirror : (x, y, startTopLeft, color = '#000000') ->
+    @mp.strokeStyle = color
+    @mp.beginPath()
+    if startTopLeft
+      @mp.moveTo(x*@scale + 4, y*@scale + 4)
+      @mp.lineTo((x+1)*@scale - 4, (y+1)*@scale - 4)
+    else
+      @mp.moveTo((x+1)*@scale - 4, y*@scale + 4)
+      @mp.lineTo(@scale + 4, (y+1)*@scale - 4)
+    @mp.closePath()
+    @mp.stroke()
+  
+  splitter : (x, y, orientation) ->
+    @mp.save()
+    @mp.translate((x+0.5) * @scale, (y+0.5) * @scale)
+    @mp.rotate(Math.PI/2 * orientation)
+    @mp.fillStyle = "#000000"
+    @mp.fillRect(4-@scale/2, -@scale/2, @scale-8, 8)
+    @mp.fillRect(-4, -@scale/2, 4, @scale)
+    @mp.restore()
+      
     
   coordsToSquare : (e) ->
     offset = $(@front).offset()
@@ -33,16 +58,21 @@ class Plot
         
     @fp.strokeStyle = '#00ff00' # ugly color for debugging
     @fp.strokeRect x*@scale+2, y*@scale+2, @scale-4, @scale-4
+
+    # display tool
+    if !@manager.getEntityAt(x, y) and UI.tool
+      @[UI.tool.toLowerCase()](x,y)
     
-  hackHandler : (e) ->
+  clickHandler : (e) ->
     [x, y] = @coordsToSquare e
-    seq = ['#ff0000', '#ffff00', '#00ffff', '#000000', '#0000ff']
     
-    @hacks["#{x}x#{y}"] = -1 if @hacks["#{x}x#{y}"] == undefined
-    @hacks["#{x}x#{y}"] += 1
-          
-    @bp.fillStyle = seq[@hacks["#{x}x#{y}"] % 5]
-    @bp.fillRect x*@scale, y*@scale, @scale, @scale
+    if entity = @manager.getEntityAt(x, y)
+      if e.which == 3 # right click
+        @manager.removeEntityAt(x, y)
+      else
+        @manager.rotateEntityClockwise(x, y)
+    else if UI.tool
+      @manager.addEntity(window[UI.tool])
       
 UI =
   zoomLevel : 1 # between 0 and 1 with 1 being max zoom level and 0.25 being 4x further away
@@ -50,23 +80,19 @@ UI =
   plots     : []
   container : false
   mousedown : false
-  dragging  : false
+  tool      : false      
   
-  showControls : -> @zoomLevel >= 0.75
-  
-  drawControls : ->
-    if @showControls()
-      false
+  zoom : (to) ->
+    zoomLevel = to
+    if zoomLevel >= 0.75
+      $("#palate").fadeIn()
+    else
+      $("#palate").fadeOut()
       
   draw : ->
     for plot in @plots
       plot.drawTiles()
   
-  displayDrag : (x, y) ->
-    e = UI.dragging
-    l = x - e.width()/2
-    t = y - e.height()/2
-    UI.dragging.css position: 'absolute', left: l, top: t, zIndex: 1000
   
   installHandlers : ->
     $(document).mousedown (e) ->
@@ -75,28 +101,17 @@ UI =
       UI.mousedown = false
       
     $(document).mousemove (e) =>
-      if @dragging
-        if @mousedown
-          @displayDrag(e.pageX, e.pageY)
-        else
-          # add entity
-          @dragging.remove()
-          @dragging = false
-      else if @mousedown
+      if @mousedown
         # pan
         @center[0] += e.pageX - @mousedown[0]
         @center[1] += e.pageY - @mousedown[1]
         UI.mousedown = [e.pageX, e.pageY]
       true
     
-    $("#item").mousedown (e) ->
-      UI.dragging = $(this).clone().attr("being-dragged",false).appendTo($("body"))
-      UI.displayDrag(e.pageX, e.pageY)
+    $("#palate li").click (e) -> UI.tool = $(this).data("tool")
   
   addPlot : (puzzle, $div) ->
-    p = new Plot(puzzle, $div.find('.fg')[0], $div.find('.bg')[0])
-    $div.mousemove (e) -> 
-      p.hoverHandler(e) or true
-    $div.mouseup (e) ->
-      p.hackHandler(e) or true
+    p = new Plot(puzzle, $div.find('.fg')[0], $div.find('.mg')[0], $div.find('.bg')[0])
+    $div.mousemove (e) -> p.hoverHandler(e) or true
+    $div.mouseup (e) -> p.clickHandler(e) or true
     @plots.push p
