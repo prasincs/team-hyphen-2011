@@ -100,14 +100,7 @@ UI =
   plots     : []
   container : false
   mousedown : false
-  tool      : false      
-  
-  zoom : (to) ->
-    zoomLevel = to
-    if zoomLevel >= 0.75
-      $("#palate").fadeIn()
-    else
-      $("#palate").fadeOut()
+  tool      : false
       
   draw : ->
     for plot in @plots
@@ -127,6 +120,9 @@ UI =
         @center[1] += e.pageY - @mousedown[1]
         UI.mousedown = [e.pageX, e.pageY]
       true
+      
+    $(document).mousewheel (e, delta) ->
+      # FUCK ZOOMING
     
     $("#palate li").click (e) -> UI.tool = $(this).data("tool")
   

@@ -120,32 +120,27 @@ class GameManager
                             # Figure out which direction we bounce off the mirror
                             switch entityOnSpace.direction
                                 when Constants.EntityOrient.NW, Constants.EntityOrient.SE
-                                    switch dir
-                                        when Directions.N, Directions.S then turnRight()
-                                        when Directions.E, Directions.W then turnLeft()
-
+                                    if dir%2 == 0 then turnRight() else turnLeft()
                                 when Constants.EntityOrient.NE, Constants.EntityOrient.SW
-                                    switch dir
-                                        when Directions.N, Directions.S then turnLeft()
-                                        when Directions.E, Directions.W then turnRight()
+                                    if dir%2 == 0 then turnLeft() else turnRight()
 
                     prevPos = currentPos
                     move()
 
 class Board
     constructor: (@size) ->
-        @grid =((false for x in [0...@size]) for y in [0...@size])
+        @grid = ((false for x in [0...@size]) for y in [0...@size])
         @lasers = []
 
     add: (entity) ->
         if entity.position[0] < @size and entity.position[1] < @size
             @grid[entity.position[1]][entity.position[0]] = entity
-            return true
+            true
 
     setAt: (x, y, obj) ->
         if x < @size and y < @size 
             @grid[y][x] = obj
-            return true
+            true
 
     getAt: (x, y) ->
         return @grid[y][x]
@@ -170,40 +165,35 @@ class GridEntity
 
     # Does this entity accept this laser?
     # Acceptance means it doesn't straight up block it
-    accepts: (laser) ->
-        return true
+    accepts: (laser) -> true
 
 class Mirror extends GridEntity
     constructor: (@position, @orientation, @mobility) ->
         @type = Constants.EntityType.MIRROR
         super(@position, @orientation, @mobility)
 
-    accepts: (laser) ->
-        return true
+    accepts: (laser) -> true
 
 class Block extends GridEntity
     constructor: (@position, @orientation, @mobility) ->
         @type = Constants.EntityType.BLOCK
         super(@position, @orientation, @mobility)
 
-    accepts: (laser) ->
-        return false
+    accepts: (laser) -> false
         
 class Filter extends GridEntity
     constructor: (@position, @orientation, @mobility, @color) ->
         @type = Constants.EntityType.FILTER
         super(@position, @orientation, @mobility)
 
-    accepts: (laser) ->
-        return laser.color is color
+    accepts: (laser) -> laser.color == color
 
 class Prism extends GridEntity
     constructor: (@position, @orientation, @mobility) ->
         @type = Constants.EntityType.PRISM
         super(@position, @orientation, @mobility)
 
-    accepts: (laser) ->
-        return true
+    accepts: (laser) -> true
  
 class Laser
     constructor: (@color) ->
@@ -211,7 +201,7 @@ class Laser
         @segments = []
 
     extend: (entity) ->
-        if(entity.accepts this)
+        if entity.accepts this
             segment = new LaserSegment(@segments[@segments.length - 1].start, entity, this)
             @segments.push(segment)
             @chain.push(entity)
