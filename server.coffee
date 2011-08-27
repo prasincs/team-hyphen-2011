@@ -6,9 +6,12 @@ DB          = require './DB'
 Constants   = require('./public/common').Constants
 Game        = require './public/game'
 GameManager = Game.GameManager
-Puzzle = Game.Puzzle
-GridEntity = Game.GridEntity
+GridEntity  = Game.GridEntity
 Puzzle      = Game.Puzzle
+Mirror      = Game.Mirror
+Prism       = Game.Prism
+Filter      = Game.Filter
+
 
 server = require('http').createServer (req, resp) -> 
   req.addListener 'end', -> files.serve req, resp
@@ -24,25 +27,37 @@ everyone = nowjs.initialize(server) #, {socketio: {'log level': 1}})
 idMap = {}
 plots = {}
 
+userPlot = (u, assign = false) ->
+  plots[idMap[u.clientId]] = assign if assign
+  plots[idMap[u.clientId]]
+
 everyone.now.addUser = (user, callback)->
   DB.users.addUser user, callback
 
-everyone.now.requestPlot= (difficulty) ->
-  x = 1
-  y = 0
-  puzzle = new Puzzle()
+everyone.now.requestPlot = (difficulty) ->
+  [x,y] = [1,0]
+  puzzle = new Puzzle(10)
   gm = new GameManager puzzle, x ,y
-  everyone.now.startPlot(x, y, puzzle, @user.clientId)
-  plots[idMap[@user.clientId]] = gm
+  everyone.now.startPlot([x, y], puzzle, @user.clientId)
+  userPlot @user, gm
 
 everyone.now.entityAdded = (entity)->
-  console.log entity
-  #[x,y] = entity.position
-  #entity = new GridEntity entity.position, entity.orientation, entity.mobility
+  [x,y] = entity.position
 
-  #everyone.now.addEntity (x, y, entity)
+  et = switch (entity.type)
+    when Constants.EntityType.MIRROR
+      new Mirror entity.position, entity.orientation, entity.mobility
+    when Constants.EntityType.PRISM
+      new Prism entity.position, entity.orientation, entity.mobility
+    when Constants.EntityType.FILTER
+      new Filter entity.position, entity.orientation, entity.mobility
+    else
+      new GridEntity entity.position, entity.orientation, entity.mobility
+    
+  everyone.now.addEntity userPlot(@user).position, et
 
-everyone.now.entityRemoved = (entity)->
-  console.log entity
-  #[x,y] = entity.position
-  everyone.now.removeEntity(x,y, entity)
+everyone.now.entityRemoved = (x, y) ->
+  everyone.now.removeEntity userPlot(@user), x, y
+  
+everyone.now.entityRotated = (x, y) ->
+  everyone.now.rotateEntity userPlot(@user), x, y
