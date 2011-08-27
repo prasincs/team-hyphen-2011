@@ -7,6 +7,9 @@ class GameManager
         
         (@numEntitiesByType[k] = 0) for _, k of Constants.EntityType
 
+    remainingEntities: (entityType) ->
+        @puzzle.getMaxForType(entityType) - @numEntitiesByType[entityType]
+
     addEntity: (entity) ->
         succeeded = false
         if entity.type is Constants.EntityType.START
@@ -51,15 +54,17 @@ class GameManager
                 toEntity = new LaserSegment(currentSegment.end, entity, laser)
                 switch entity.type
                     when Constants.EntityType.BLOCK
-                        # remove all laser segments including and after the current
-                        laser.segments = laser.segments[0..laser.segments.length - (i-1)]
-
+                        chopAllAfterCurrent()
                         # Add the new segment that points from the end of the last segment
                         # to the new entity.
                         laser.segments.push(toEntity)
                     when Constants.EntityType.MIRROR
+                        chopAllAfterCurrent()
+
                         # Bounce laser
-                        null
+                        bounced = new LaserSegment(entity, null, laser, entity.bounceDirection(currentSegment))
+                        laser.segments.push(toEntity, bounced)
+
                     when Constants.EntityType.PRISM
                         # Split laser at 90 degree angles
                         rightSegment = new LaserSegment(entity, null, laser, (currentSegment.direction + 1) % 4)
@@ -169,6 +174,7 @@ class GameManager
         return !!ret and
                laser.segments[laser.segments.length-1].end.type is Constants.EntityType.END and
                laser.segments[0].start.type is Constants.EntityType.START
+
 """[
         start = laser.chain[0]
         end = laser.chain[laser.chain.length - 1]
@@ -246,9 +252,11 @@ class Board
         
 class Puzzle
     constructor: () ->
+        # Actual values to be filled in once we get settled on a representation
+        (@maxEntitiesByType[k] = 0) for _, k of Constants.EntityType
 
     getMaxForType: (entityType) ->
-        return 100000
+        @maxEntitiesByType[entityType]
 
 class GridEntity
     constructor: (@position, @orientation, @mobility) ->
@@ -288,6 +296,22 @@ class Mirror extends GridEntity
         super(@position, @orientation, @mobility)
 
     accepts: (laser) -> false
+    bounceDirection: (segment) ->
+
+    # Tried to make this an expression, but I kept getting syntax errors
+    if @orientation is Constants.EntityOrient.NW or @orientation is Constants.EntityOrient.SE
+        segment.direction =
+        (if segment.direction is Constants.LaserDirection.N or segment.direction is Constants.LaserDirection.S
+           (segment.direction + 1) % 4
+        else
+           (segment.direction - 1) % 4)
+
+    if @orientation is Constants.EntityOrient.SW or @orientation is Constants.EntityOrient.NE
+        segment.direction =
+        (if segment.direction is Constants.LaserDirection.N or segment.direction is Constants.LaserDirection.S
+            (segment.direction - 1) % 4
+        else
+            (segment.direction + 1) % 4)
 
 class Block extends GridEntity
     constructor: (@position) ->
@@ -318,9 +342,6 @@ class Laser
     extend: (entity) ->
         if entity.accepts(this) or entity.type is Constants.EntityType.MIRROR
             segment = new LaserSegment(@segments[@segments.length - 1]?.start or @startpoint, entity, this)
-            
-            
-            
             @segments.push(segment)
             @chain.push(entity)
         return this
@@ -333,4 +354,3 @@ class LaserSegment
     constructor: (@start, @end, @laser, @direction) ->
         if @start.type is Constants.EntityType.START
             @direction = @start.direction
-
