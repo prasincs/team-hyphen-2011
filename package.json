@@ -19,6 +19,6 @@
   },
   "devDependencies": {},
   "scripts": {
-    "start": "(cd public; coffee --compile *.coffee) && coffee server.coffee"
+    "start": "(cd public && coffee -c -b *.coffee) && coffee server.coffee"
   }
 }
