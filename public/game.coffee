@@ -4,7 +4,7 @@ class GameManager
         @changed = []
         @numEntitiesByType = {}
         
-        (@numEntitiesByType[k] = 0) for k in Constants.EntityType
+        (@numEntitiesByType[k] = 0) for _, k of Constants.EntityType
 
     addEntity: (entity) ->
         succeeded = false
@@ -37,10 +37,10 @@ class GameManager
         @board.setAt(x, y, {})
     
     incrementEntityType: (type) ->
-        @numEntitiesByType[entity.type] += 1
+        @numEntitiesByType[type] += 1
 
     decrementEntityType: (type) ->
-        @numEntitiesByType[entity.type] -= 1
+        @numEntitiesByType[type] -= 1
     
     rotateEntityClockwise: (x, y) ->
         @getEntityAt(x, y).rotateClockwise()

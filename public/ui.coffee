@@ -1,5 +1,4 @@
 class Plot
-  hacks : {}
   
   constructor : (@manager, @front, @mid, @back) ->
     @fp = @front.getContext '2d'
@@ -7,6 +6,7 @@ class Plot
     @bp = @back.getContext '2d'
     @size  = @front.height
     @scale = @size / 10.0
+    @pen = @mp
   
   drawTiles : ->
     @bp.fillStyle = '#999999'
@@ -17,31 +17,45 @@ class Plot
       for y in [x%2..10] by 2
         @bp.fillRect x*@scale, y*@scale, @scale, @scale
 
-  block : (x, y) ->
-    @mp.fillStyle = "#000000"
-    @mp.fillRect x*@scale + 4, y*@scale + 4, @scale - 8, @scale - 8
+  drawEntities : ->
+    @pen = @mp
+    for x in [0..9]
+      for y in [0..9]
+        if e = @manager.getEntityAt(x, y)
+          @[e.constructor.name.toLowerCase()](e)
+
+  block : (e) ->
+    [x,y] = e.position
+    @pen.fillStyle = "#000000"
+    @pen.fillRect x*@scale + 4, y*@scale + 4, @scale - 8, @scale - 8
     
-  mirror : (x, y, startTopLeft, color = '#000000') ->
-    @mp.strokeStyle = color
-    @mp.beginPath()
-    if startTopLeft
-      @mp.moveTo(x*@scale + 4, y*@scale + 4)
-      @mp.lineTo((x+1)*@scale - 4, (y+1)*@scale - 4)
+  mirror : (e) ->
+    [x, y] = e.position
+    console.log [x, y]
+    
+    @pen.strokeStyle = e.color || "#000000"
+    @pen.beginPath()
+    if e.orientation == 1 # NW
+      @pen.moveTo(x*@scale + 4, y*@scale + 4)
+      @pen.lineTo((x+1)*@scale - 4, (y+1)*@scale - 4)
     else
-      @mp.moveTo((x+1)*@scale - 4, y*@scale + 4)
-      @mp.lineTo(@scale + 4, (y+1)*@scale - 4)
-    @mp.closePath()
-    @mp.stroke()
+      @pen.moveTo((x+1)*@scale - 4, y*@scale + 4)
+      @pen.lineTo(@scale + 4, (y+1)*@scale - 4)
+    @pen.closePath()
+    @pen.stroke()
   
-  splitter : (x, y, orientation) ->
-    @mp.save()
-    @mp.translate((x+0.5) * @scale, (y+0.5) * @scale)
-    @mp.rotate(Math.PI/2 * orientation)
-    @mp.fillStyle = "#000000"
-    @mp.fillRect(4-@scale/2, -@scale/2, @scale-8, 8)
-    @mp.fillRect(-4, -@scale/2, 4, @scale)
-    @mp.restore()
-      
+  prism : (e) ->
+    [x,y] = e.position
+    
+    @pen.save()
+    @pen.translate((x+0.5) * @scale, (y+0.5) * @scale)
+    @pen.rotate(Math.PI/2 * (e.orientation-1))
+    @pen.fillStyle = "#000000"
+    @pen.fillRect(4-@scale/2, -@scale/2, @scale-8, 8)
+    @pen.fillRect(-4, -@scale/2, 4, @scale)
+    @pen.restore()
+  
+  filter : (e) -> @mirror(e)
     
   coordsToSquare : (e) ->
     offset = $(@front).offset()
@@ -61,7 +75,8 @@ class Plot
 
     # display tool
     if !@manager.getEntityAt(x, y) and UI.tool
-      @[UI.tool.toLowerCase()](x,y)
+      @pen = @fp
+      @[UI.tool.toLowerCase()](new (window[UI.tool])([x,y], 1, true))
     
   clickHandler : (e) ->
     [x, y] = @coordsToSquare e
@@ -72,7 +87,8 @@ class Plot
       else
         @manager.rotateEntityClockwise(x, y)
     else if UI.tool
-      @manager.addEntity(window[UI.tool])
+      console.log "ADDING ENTITY"
+      @manager.addEntity(new (window[UI.tool])([x,y], 1, true))
       
 UI =
   zoomLevel : 1 # between 0 and 1 with 1 being max zoom level and 0.25 being 4x further away
