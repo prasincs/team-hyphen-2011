@@ -6,7 +6,6 @@ class GameManager
         @board = new Board(10)
         @changed = []
         @numEntitiesByType = {}
-        @endpoints = []
         
         (@numEntitiesByType[k] = 0) for _, k of Constants.EntityType
 
@@ -16,10 +15,10 @@ class GameManager
     addEntity: (entity) ->
         succeeded = false
         if entity.type is Constants.EntityType.START
-            @startpoint = entity
+            @board.startpoint = entity
             succeeded = true
         else if entity.type is Constants.EntityType.END
-            @endpoints.push entity
+            @board.endPoints.push(entity)
             succeeded = true
         else if !@getEntityAt(entity.position[0], entity.position[1])
             if @numEntitiesByType[entity.type] < @puzzle.getMaxForType(entity.type)
@@ -27,67 +26,88 @@ class GameManager
                    @incrementEntityType(entity.type)
                    @addToChanged(entity.position)
 
-        # @updateLasers(entity)
+        @traceAllLasers()
         return succeeded
     
+    reset: () ->
+        e.satisfied = false for e in @board.endPoints
+        laser.segments = [] for laser in @board.lasers
+
+    traceAllLasers: () ->
+        @reset()
+        # Traces the SHIT out of every laser on the board, super hard.
+        @traceLaser(laser) for laser in @board.lasers
+    
+    traceLaser: (laser) ->
+        # Trace one laser 1 / num_lasers as HARD AS IT CAN
+
+        dy = 0
+        dx = 0
+        x = laser.startpoint.position[0]
+        y = laser.startpoint.position[1]
+        
+        mapDir = (dir) ->
+            dirs = Constants.LaserDirection
+            switch dir
+                when dirs.N
+                    dy = -1
+                    dx = 0
+                when dirs.S
+                    dy = 1
+                    dx = 0
+                when dirs.W
+                    dy = 0
+                    dx = -1
+                when dirs.E
+                    dy = 0
+                    dx = 1
+        currDir = laser.startpoint.direction
+        firstSeg = new LaserSegment( laser.startpoint, null, laser, currDir )
+        laser.segments.push(firstSeg)
+ 
+        while(x >= 0 and y >= 0 and x < @board.size-1 and y < @board.size-1)
+            mapDir(currDir)
+            x += dx
+            y += dy
+            current = @board.getAt(x, y)
+            unless current
+                current = @board.getEndPoint(x, y)
+            unless not current
+                # Something is here
+
+                # Connect the end of the last laser to the thing.
+                previous = laser.segments[laser.segments.length - 1]
+                previous.end = current
+
+                switch current.type
+                    when Constants.EntityType.MIRROR
+                        # Change direction
+                        seg = new LaserSegment( current, null, laser, currDir)
+                        currDir = current.bounceDirection(currDir)
+                        seg.direction = currDir
+                        laser.segments.push(seg)
+                        break
+
+                    when Constants.EntityType.BLOCK
+                        break
+                    when Constants.EntityType.FILTER
+                        if current.color isnt laser.color
+                            break
+                        else
+                            seg = new LaserSegment( current, null, laser, currDir)
+                            seg.direction = currDir
+                            laser.segments.push(seg)
+                    when Constants.EntityType.PRISM
+                        # ugh
+                        break
+
     removeEntity: (entity) ->
         removeEntityAt(entity.position[0], entity.position[1])
 
     updateLasers: (entity) ->
         # Ensure the laser segments are still correct given the new entity
         correctLaser(laser, entity) for laser in board.lasers when not validateLaser(laser)
-
-    correctLaser: (laser, entity) ->
-        # If a laser has segments that are no longer valid given the current entity,
-        # correct it based on the laser type. (filter vs block vs mirror...)
         
-        # Removes all laser segments after AND including the current segment
-        chopAllAfterCurrent = () ->
-            laser.segments = laser.segments[0..laser.segments.length (i-1)]
-
-        i = 0
-        currentSegment = laser.segments[i]
-        while(currentSegment and i < laser.segments.length)
-
-            # If the new entity affects this segment at all
-            if @isBetween(currentSegment, entity)
-
-                # A new segment that points from the end of the current segment
-                # to the newly blocking entity 
-                toEntity = new LaserSegment(currentSegment.end, entity, laser)
-                switch entity.type
-                    when Constants.EntityType.BLOCK
-                        chopAllAfterCurrent()
-                        # Add the new segment that points from the end of the last segment
-                        # to the new entity.
-                        laser.segments.push(toEntity)
-                    when Constants.EntityType.MIRROR
-                        chopAllAfterCurrent()
-
-                        # Bounce laser
-                        bounced = new LaserSegment(entity, null, laser, entity.bounceDirection(currentSegment))
-                        laser.segments.push(toEntity, bounced)
-
-                    when Constants.EntityType.PRISM
-                        # Split laser at 90 degree angles
-                        rightSegment = new LaserSegment(entity, null, laser, (currentSegment.direction + 1) % 4)
-                        leftSegment = new LaserSegment(entity, null, laser, (currentSegment.direction - 1) % 4)
-                        chopAllAfterCurrent()
-
-                        # Push the segment to the prism -> 90 degrees right -> 90 degrees left
-                        laser.segments.push(toEntity, rightSegment, leftSegment)
-
-                       
-                    when Constants.EntityType.FILTER
-                        # Block if the color of the laser is not equal to that of the filter
-                        if entity.color isnt laserSegment.laser.color
-                            chopAllAfterCurrent()
-                            laser.segments.push(toEntity)
-
-                    else
-                        # Do nothing
-                        null
-            i += 1
     isBetween: (segment, entity) ->
         startPos = segment.start.position
         endPos = segment.end.position
@@ -102,6 +122,7 @@ class GameManager
 
     addLaser: (laser) ->
         @board.lasers.push(laser)
+        @traceAllLasers()
 
     flushChanged: () ->
         @changed = []
@@ -116,6 +137,7 @@ class GameManager
             @decrementEntityType(occupant.type)
 
         @board.setAt(x, y, false)
+        @traceAllLasers()
     
     incrementEntityType: (type) ->
         @numEntitiesByType[type] += 1
@@ -141,11 +163,13 @@ class GameManager
 
         # For now, just take the win condition to be 'all lasers reaching an end state through valid moves'
         finalResult = true
-        (finalResult &= e.satisfied for e in @endpoints)
+        (finalResult &= e.satisfied for e in @board.endPoints)
         return !!(finalResult)
     
     validateSegment: (segment) ->
-        console.log @board
+        unless segment.end
+            return false
+
         if(segment.start.position[0] is segment.end.position[0])
             # Check if any of the entities between the start / end on this row are blockers.
             colBetween = @board.grid[segment.start.position[0]][segment.start.position[1]+1..segment.end.position[1]-1]
@@ -169,95 +193,53 @@ class GameManager
         (ret &= result for result in results)
 
         lastPoint = laser.segments[laser.segments.length-1].end
+        if not lastPoint
+           return false
+        else 
 
-        # Flag the end point as satisfied if this laser is valid and the last entity on the laser
-        # is an end point.
-        if lastPoint.type is Constants.EntityType.END and ret
-            lastPoint.satisfied = true
-        return !!ret and
-               laser.segments[laser.segments.length-1].end.type is Constants.EntityType.END and
-               laser.segments[0].start.type is Constants.EntityType.START
-
-"""[
-        start = laser.chain[0]
-        end = laser.chain[laser.chain.length - 1]
-        
-        if end.type isnt Constants.EntityType.END or
-           start.type is Constants.EntityType.END
-            return false
-        
-        currentPos = start.position
-        prevPos = currentPos
-        currentEntity = start
-        i = 0
-        success = false
-
-        Directions =
-            N: 0
-            E: 1
-            S: 2
-            W: 3
-
-        dir = null
-
-        turnLeft = () ->
-            dir = (dir + 1) % 4
-
-        turnRight = () ->
-            dir = (dir - 1) % 4
-
-        move = () ->
-          [ (currentPos[0]    % 2)*(currentPos[0] - 2),
-           ((currentPos[1]+1) % 2)*(currentPos[1] - 1)]
-
-        while i < laser.chain.length
-            entityOnSpace = @board.getAt(currentPos[0], currentPos[1])
-            i += 1 if entityOnSpace
-            
-            # Reached the end successfully
-            if entityOnSpace.type is Constants.EntityType.END
-                success = true
-                break
-            else if not entityOnSpace.accept(laser)
-                break
-            else
-                if entityOnSpace
-                    switch entityOnSpace.type
-                        when Constants.EntityType.MIRROR
-                            # Figure out which direction we bounce off the mirror
-                            switch entityOnSpace.direction
-                                when Constants.EntityOrient.NW, Constants.EntityOrient.SE
-                                    if dir%2 == 0 then turnRight() else turnLeft()
-                                when Constants.EntityOrient.NE, Constants.EntityOrient.SW
-                                    if dir%2 == 0 then turnLeft() else turnRight()
-
-                    prevPos = currentPos
-                    move()
-"""
+            # Flag the end point as satisfied if this laser is valid and the last entity on the laser
+            # is an end point.
+            if lastPoint.type is Constants.EntityType.END and ret
+                lastPoint.satisfied = true
+            return !!ret and
+                   laser.segments[laser.segments.length-1].end.type is Constants.EntityType.END and
+                   laser.segments[0].start.type is Constants.EntityType.START
 
 class Board
     constructor: (@size) ->
         @grid = ((false for x in [0...@size]) for y in [0...@size])
+
+        @endPoints = []
         @lasers = []
 
     add: (entity) ->
-        if entity.position[0] < @size and entity.position[1] < @size
+        if @inBounds(entity.position[0], entity.position[1])
             @grid[entity.position[1]][entity.position[0]] = entity
-            true
+            return true
+
+    inBounds: (x, y) ->
+        return (x < @size and y < @size and x >= 0 and y >= 0)
 
     setAt: (x, y, obj) ->
-        if x < @size and y < @size 
+        if @inBounds(x, y)
             @grid[y][x] = obj
-            true
+            return true
 
     getAt: (x, y) ->
-        return @grid[y][x]
+        if @inBounds(x, y)
+            return @grid[y][x]
+
+    getEndPoint: (x, y) ->
+        result = (e for e in @endPoints when x is e.position[0] and y is e.position[1])
+        unless result.length
+            return false
+        return result[0]
         
 class Puzzle
     constructor: () ->
         # Actual values to be filled in once we get settled on a representation
         @maxEntitiesByType = {}
-        (@maxEntitiesByType[k] = 10) for _, k of Constants.EntityType
+        (@maxEntitiesByType[k] = 10000) for _, k of Constants.EntityType
 
     getMaxForType: (entityType) ->
         @maxEntitiesByType[entityType]
@@ -287,7 +269,7 @@ class Endpoint extends GridEntity
     accepts: (laser) -> true
 
 class Startpoint extends GridEntity
-    constructor: (@position) ->
+    constructor: (@position, @direction) ->
         @type = Constants.EntityType.START
         super(@position, 1, false)
     
@@ -300,22 +282,19 @@ class Mirror extends GridEntity
         super(@position, @orientation, @mobility)
 
     accepts: (laser) -> false
-    bounceDirection: (segment) ->
-
-    # Tried to make this an expression, but I kept getting syntax errors
-    if @orientation is Constants.EntityOrient.NW or @orientation is Constants.EntityOrient.SE
-        segment.direction =
-        (if segment.direction is Constants.LaserDirection.N or segment.direction is Constants.LaserDirection.S
-           (segment.direction + 1) % 4
-        else
-           (segment.direction - 1) % 4)
-
-    if @orientation is Constants.EntityOrient.SW or @orientation is Constants.EntityOrient.NE
-        segment.direction =
-        (if segment.direction is Constants.LaserDirection.N or segment.direction is Constants.LaserDirection.S
-            (segment.direction - 1) % 4
-        else
-            (segment.direction + 1) % 4)
+    bounceDirection: (direction) ->
+        # Tried to make this an expression, but I kept getting syntax errors
+        if @orientation is Constants.EntityOrient.NW or @orientation is Constants.EntityOrient.SE
+            if direction is Constants.LaserDirection.N or direction is Constants.LaserDirection.S
+               result = (direction + 1) % 4
+            else
+               result = (direction - 1) % 4
+        else if @orientation is Constants.EntityOrient.SW or @orientation is Constants.EntityOrient.NE
+            if direction is Constants.LaserDirection.N or direction is Constants.LaserDirection.S
+                result = (direction - 1) % 4
+            else
+                result = (direction + 1) % 4
+        return result
 
 class Block extends GridEntity
     constructor: (@position) ->

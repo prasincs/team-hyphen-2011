@@ -166,7 +166,7 @@ UI =
 
     $("#wrapper").addClass("dragdealer")      
     $("#map").addClass('handle')
-    d = new Dragdealer 'wrapper', vertical: true
+    new Dragdealer 'wrapper', vertical: true
 
     $(document).mousewheel (e, delta) =>
       if delta > 0
