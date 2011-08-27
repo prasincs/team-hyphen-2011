@@ -1,4 +1,4 @@
-Constants = require('./common')
+Constants = require?('./common')
 
 class GameManager
     constructor: (@puzzle) ->
@@ -119,6 +119,7 @@ class Laser
     truncate: () ->
         @chain.pop()
 
+exports ?= {}
 exports.GameManager = GameManager
 exports.Board = Board
 exports.GridEntity = GridEntity
