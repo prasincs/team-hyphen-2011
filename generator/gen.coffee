@@ -10,7 +10,7 @@ dedupedLength = (arr) ->
 randIntExclude = (range,excluded) ->
     result = randInt(range - (dedupedLength excluded))
     for i in excluded
-        if result >= i then result += 1
+        if result >= i and i >= 0 then result += 1
     if result < 0 then throw "randIntExclude < 0... " + result + " " + range
     result
 
@@ -156,9 +156,22 @@ drawBoard = () ->
         console.log(generated)
         console.log(blocked)
 
-toBoard = ->
+makeBoard = () ->
     size = 10
     b = new Board(size)
+    [[sX,sY,sD],mirrors,blocks,[eX,eY,eD]] = genBoard(n=4,size=size)
+    for [x,y,d] in mirrors
+        orientmap = {nw:1 ,ne:2 ,se:3, sw:4}
+        mirror = new Mirror([x,y],orientmap[d],false)
+        b.add(mirror)
+    for [x,y] in blocks
+        block = new Block([x,y])
+        b.add(block)
+    d = if sD is 'h' then if sY is -1 then 'left' else 'right' else if sX is -1 then 'down' else 'up'
+    b.add(new Startpoint([sX,sY]),d)
+    d = if eD is 'h' then if eY is -1 then 'left' else 'right' else if eX is -1 then 'down' else 'up'
+    b.add(new Endpoint([eX,eY]),d)
+    b
 
 drawBoard()
 
