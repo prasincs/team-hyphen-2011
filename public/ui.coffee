@@ -19,6 +19,7 @@ class Plot
 
   drawEntities : ->
     @pen = @mp
+    @pen.clearRect 0, 0, @size, @size
     for x in [0..9]
       for y in [0..9]
         if e = @manager.getEntityAt(x, y)
@@ -35,12 +36,12 @@ class Plot
     
     @pen.strokeStyle = e.color || "#000000"
     @pen.beginPath()
-    if e.orientation == 1 # NW
+    if e.orientation % 2 == 1 # NW
       @pen.moveTo(x*@scale + 4, y*@scale + 4)
       @pen.lineTo((x+1)*@scale - 4, (y+1)*@scale - 4)
     else
       @pen.moveTo((x+1)*@scale - 4, y*@scale + 4)
-      @pen.lineTo(@scale + 4, (y+1)*@scale - 4)
+      @pen.lineTo(x*@scale + 4, (y+1)*@scale - 4)
     @pen.closePath()
     @pen.stroke()
   
@@ -63,10 +64,13 @@ class Plot
     [Math.floor((e.pageX - offset.left)/@scale),
      Math.floor((e.pageY - offset.top)/@scale)]
 
-  hoverHandler : (e) ->
-    
+  clearLast : () ->
     if @lastMouseMove
       @fp.clearRect @lastMouseMove[0]*@scale, @lastMouseMove[1]*@scale, @scale, @scale
+    
+
+  hoverHandler : (e) ->
+    @clearLast()
 
     @lastMouseMove = [x,y] = @coordsToSquare e
         
@@ -89,7 +93,9 @@ class Plot
     else if UI.tool
       console.log "ADDING ENTITY"
       @manager.addEntity(new (window[UI.tool])([x,y], 1, true))
-      
+    @drawEntities()
+    @clearLast()
+    
 UI =
   zoomLevel : 1 # between 0 and 1 with 1 being max zoom level and 0.25 being 4x further away
   center    : [0, 0]
