@@ -44,16 +44,11 @@ everyone.now.requestPlot = (difficulty) ->
 everyone.now.entityAdded = (entity)->
   [x,y] = entity.position
 
-  et = switch (entity.type)
-    when Constants.EntityType.MIRROR
-      new Mirror entity.position, entity.orientation, entity.mobility
-    when Constants.EntityType.PRISM
-      new Prism entity.position, entity.orientation, entity.mobility
-    when Constants.EntityType.FILTER
-      new Filter entity.position, entity.orientation, entity.mobility
-    else
-      new GridEntity entity.position, entity.orientation, entity.mobility
+  type = Constants.RevEntityType[entity.type]
+  et = new Game[type](entity.position, entity.orientation, entity.mobility)
   
+  console.log(et.constructor.name)
+
   plot = userPlot @user
   everyone.now.addEntity [plot.gridX, plot.gridY], et
 
