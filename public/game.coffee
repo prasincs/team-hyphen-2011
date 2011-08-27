@@ -37,9 +37,9 @@ class GameManager
     removeEntityAt: (x, y) ->
         occupant = @board.getAt(x, y)
         if occupant
-            @decrementEntityType(entity.type)
+            @decrementEntityType(occupant.type)
 
-        @board.setAt(x, y, {})
+        @board.setAt(x, y, false)
     
     incrementEntityType: (type) ->
         @numEntitiesByType[type] += 1
@@ -87,6 +87,7 @@ class GameManager
             return not blockers.length
 
     walkLaser: (laser) ->
+"""[
         start = laser.chain[0]
         end = laser.chain[laser.chain.length - 1]
         
@@ -141,6 +142,7 @@ class GameManager
 
                     prevPos = currentPos
                     move()
+"""
 
 class Board
     constructor: (@size) ->
