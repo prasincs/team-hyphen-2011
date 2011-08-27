@@ -36,10 +36,11 @@ everyone.now.requestPlot= (difficulty) ->
   gm = new GameManager puzzle, x ,y
   console.log @user.clientId
   everyone.now.startPlot(x, y, puzzle, @user.clientId)
-  plots[idMap[@user.clientId]] = gm
+  idMap[@user.clientId] = {difficulty: difficulty}
+  plots[@user.clientId] = gm
 
 everyone.now.entityAdded = (entity)->
-  console.log entity
+  #console.log entity
   [x,y] = entity.position
   et = new GridEntity entity.position, entity.orientation, entity.mobility
 
@@ -54,6 +55,6 @@ everyone.now.entityAdded = (entity)->
   everyone.now.addEntity x, y, et
 
 everyone.now.entityRemoved = (entity)->
-  console.log entity
+  #console.log entity
   [x,y] = entity.position
   everyone.now.removeEntity(x,y, entity)
