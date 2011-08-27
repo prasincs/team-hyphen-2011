@@ -8,18 +8,20 @@ class GameManager
         (@numEntitiesByType[k] = 0) for _, k of Constants.EntityType
 
     addEntity: (entity) ->
+        succeeded = false
         if entity.type is Constants.EntityType.START
             @startpoint = entity
+            succeeded = true
         else if entity.type is Constants.EntityType.END
             @endpoints.push entity
-        succeeded = false
-        if !@getEntityAt(entity.position[0], entity.position[1])
+            succeeded = true
+        else if !@getEntityAt(entity.position[0], entity.position[1])
             if @numEntitiesByType[entity.type] < @puzzle.getMaxForType(entity.type)
                    succeeded = @board.add(entity)
                    @incrementEntityType(entity.type)
                    @addToChanged(entity.position)
 
-        #@updateLasers(entity)
+        # @updateLasers(entity)
         return succeeded
     
     removeEntity: (entity) ->
@@ -40,7 +42,12 @@ class GameManager
         i = 0
         currentSegment = laser.segments[i]
         while(currentSegment and i < laser.segments.length)
+
+            # If the new entity affects this segment at all
             if @isBetween(currentSegment, entity)
+
+                # A new segment that points from the end of the current segment
+                # to the newly blocking entity 
                 toEntity = new LaserSegment(currentSegment.end, entity, laser)
                 switch entity.type
                     when Constants.EntityType.BLOCK
@@ -59,6 +66,7 @@ class GameManager
                         leftSegment = new LaserSegment(entity, null, laser, (currentSegment.direction - 1) % 4)
                         chopAllAfterCurrent()
 
+                        # Push the segment to the prism -> 90 degrees right -> 90 degrees left
                         laser.segments.push(toEntity, rightSegment, leftSegment)
 
                        
@@ -125,7 +133,7 @@ class GameManager
 
         # For now, just take the win condition to be 'all lasers reaching an end state through valid moves'
         finalResult = true
-        (finalResult &= result for result in results)
+        (finalResult &= e.satisfied for e in @endpoints)
         return !!(finalResult)
     
     validateSegment: (segment) ->
@@ -151,6 +159,13 @@ class GameManager
         results = (@validateSegment(seg) for seg in laser.segments)
         ret = true
         (ret &= result for result in results)
+
+        lastPoint = laser.segments[laser.segments.length-1].end
+
+        # Flag the end point as satisfied if this laser is valid and the last entity on the laser
+        # is an end point.
+        if lastPoint.type is Constants.EntityType.END and ret
+            lastPoint.satisfied = true
         return !!ret and
                laser.segments[laser.segments.length-1].end.type is Constants.EntityType.END and
                laser.segments[0].start.type is Constants.EntityType.START
