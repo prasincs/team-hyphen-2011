@@ -18,9 +18,6 @@ Constants =
         PRISM: 2
         BLOCK: 3
         FILTER: 4
-
-        
-        # Endpoint
         END: 5
         START: 6
 

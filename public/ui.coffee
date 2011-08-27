@@ -166,7 +166,7 @@ UI =
 
     $("#wrapper").addClass("dragdealer")      
     $("#map").addClass('handle')
-    d = new Dragdealer 'wrapper', vertical: true
+    new Dragdealer 'wrapper', vertical: true
 
     $(document).mousewheel (e, delta) =>
       if delta > 0
@@ -219,5 +219,7 @@ UI =
       $(old.front).parent().remove()
     
     (@plots[manager.gridX] ?= [])[manager.gridY] = p
+    p.drawTiles()
+    p.drawEntities()
     
     $div.css left: "#{p.size*manager.gridX}px", top: "#{p.size*manager.gridY}px"
