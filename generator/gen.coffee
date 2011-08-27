@@ -47,9 +47,17 @@ class Pt1
             when 'h' then other.y is @y
             when 'v' then other.x is @x
 
-class Mirror
-    constructor: (@x,@y,@direction) ->
+class Block
+    constructor: (@x,@y) -> @type = 'block'
+    toString: -> '#'
 
+class Mirror
+    constructor: (@x,@y,@direction) -> @type = 'mirror'
+    toString: ->
+        switch @orientation
+            when 'nw','se' then '/'
+            when 'ne','sw' then '\\'
+            else Assert.error("impossible case")
     setOrientation: (prev,next) ->
         if @direction is 'h' then [prev,next] = [next,prev]
         [isLeft,isUp] = [prev.x < @x, next.y < @y]
@@ -134,7 +142,7 @@ class Color
             when 'h' then new Pt1(end.x,prev.y,'v')
             when 'v' then new Pt1(prev.x,end.y,'h')
             else Assert.error("dir must be one of 'h' or 'v'")
-        @usedPoints = @usedPoints.concat(@getLine(prev,pt))
+        @usedPoints = @usedPoints.concat(@getLine(prev,pt)).concat(@getLine(pt,end))
         @solutionPoints.push(pt)
         pt
     pickPoint: (prev) =>
@@ -149,7 +157,6 @@ class Color
                 newY = Rand.intExclude(@parent.size-1,excluded)
                 new Pt1(prev.x,newY,'h')
             else Assert.error("dir must be one of 'h' or 'v'")
-        line = @getLine(prev,pt)
         Assert.true(prev.x isnt pt.x or prev.y isnt pt.y,
                     "points may not overlap (#{pt.x},#{pt.y})")
         @usedPoints = @usedPoints.concat(@getLine(prev,pt))
@@ -169,14 +176,47 @@ class Puzzle
         #@green = new Color('green',this)
         #@blue  = new Color('blue' ,this)
         @red.make(@count)
+        @static = []
+        @makeStatic()
+
+
+    randomPoint: -> [Rand.int(@size-1),Rand.int(@size-1)]
+    randomUnblockedPoints: (count) ->
+        # TODO: make this support multiple colors
+        blockedStrs = ((b+'') for b in @red.usedPoints)
+        points = []
+        while points.length < count
+            point = @randomPoint()
+            if (point+'') not in blockedStrs
+                points.push(point)
+                blockedStrs.push(point+'')
+        points
+    makeStatic: (count=20) ->
+        for [x,y] in @randomUnblockedPoints(count)
+            if Rand.int(2) is 0
+                mirror = new Mirror(x,y)
+                mirror.orientation = ['ne','nw','sw','se'][Rand.int(3)]
+                @static.push(mirror)
+            else
+                @static.push(new Block(x,y))
+        for mirror in @red.mirrors
+            if Rand.int(3) is 0 then @static.push(mirror)
+                
+
     # maybe TODO: print out things that aren't from the red part
     printAscii: ->
         board = (('.' for i in [0...(@size+2)]) for j in [0...(@size+2)])
-        for mirror in @red.mirrors
-            board[mirror.x+1][mirror.y+1] = switch mirror.orientation
-                when 'nw','se' then '/'
-                when 'ne','sw' then '\\'
-                else Assert.error("orientation must be one of ne,sw,nw,se (is #{mirror.orientation})")
+        #for [x,y] in @red.usedPoints
+        #    board[x+1][y+1] = '!'
+        #for mirror in @red.mirrors
+        #    board[mirror.x+1][mirror.y+1] = switch mirror.orientation
+        #        when 'nw','se' then '/'
+        #        when 'ne','sw' then '\\'
+        #        else Assert.error("orientation must be one of ne,sw,nw,se (is #{mirror.orientation})")
+        for static in @static
+            space = board[static.x+1][static.y+1]
+            if space isnt '.' then Assert.error("static elements shouldn't cover things (#{space}) up!")
+            board[static.x+1][static.y+1] = static.toString()
         s = @red.start
         e = @red.ends[0]
         board[s.x+1][s.y+1] = 's'
@@ -187,16 +227,6 @@ class Puzzle
 p = new Puzzle()
 p.printAscii()
 
-randomPoint = (size) ->
-    [randInt(size-1),randInt(size-1)]
-
-pickRandomPoints = (size,blocked,number=10) ->
-    blockedStrs = ((b+'') for b in blocked)
-    points = []
-    while points.length < number
-        point = randomPoint(size)
-        if (point+'') not in blockedStrs then points.push(point)
-    points
 
 
 class M
