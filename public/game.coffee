@@ -1,5 +1,5 @@
 class GameManager
-    constructor: (@puzzle) ->
+    constructor: (@puzzle, @gridX, @gridY) ->
         @board = new Board(10)
         @changed = []
         @numEntitiesByType = {}
@@ -35,25 +35,29 @@ class GameManager
 
         i = 0
         currentSegment = laser.segments[i]
-        while(currentSegment)
+        while(currentSegment and i < laser.segments.length)
             if @isBetween(currentSegment, entity)
-                toEntity = new LaserSegment(start, entity, laser)
-                fromEntity = (switch entity.type
-                                  when Constants.EntityType.BLOCK
-                                      # remove all laser segments forward
-                                      null
-                                  when Constants.EntityType.MIRROR
-                                      # Bounce laser
-                                      null
-                                  when Constants.EntityType.PRISM
-                                      # Split laser at 90 degree angles
-                                      null
-                                  when Constants.EntityType.FILTER
-                                      # Block if the color of the laser is not equal to that of the filter
-                                      null
-                                  else
-                                      # Do nothing
-                                      null)
+                toEntity = new LaserSegment(currentSegment.end, entity, laser)
+                switch entity.type
+                    when Constants.EntityType.BLOCK
+                        # remove all laser segments including and after the current
+                        laser.segments = laser.segments[0..laser.segments.length - (i-1)]
+
+                        # Add the new segment that points from the end of the last segment
+                        # to the new entity.
+                        laser.segments.push(toEntity)
+                    when Constants.EntityType.MIRROR
+                        # Bounce laser
+                        null
+                    when Constants.EntityType.PRISM
+                        # Split laser at 90 degree angles
+                        null
+                    when Constants.EntityType.FILTER
+                        # Block if the color of the laser is not equal to that of the filter
+                        null
+                    else
+                        # Do nothing
+                        null
             i += 1
     isBetween: (segment, entity) ->
         startPos = segment.start.position
