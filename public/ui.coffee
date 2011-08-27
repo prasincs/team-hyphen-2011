@@ -14,10 +14,10 @@ class Plot
     @scale = @size / 10.0
   
   drawTiles : ->
-    @bp.fillStyle = '#999999'
+    @bp.fillStyle = '#ddd'
     @bp.fillRect 0, 0, @size, @size
     
-    @bp.fillStyle = '#cccccc'
+    @bp.fillStyle = '#eee'
     for x in [0..10]
       for y in [x%2..10] by 2
         @bp.fillRect x*@scale, y*@scale, @scale, @scale
@@ -128,6 +128,7 @@ class Plot
 UI =
   zoomLevel : 1 # between 0 and 1 with 1 being max zoom level and 0.25 being 4x further away
   topLeft   : [0, 0]
+  bottomRight : [0, 0]
   plots     : []
   container : false
   tool      : false
@@ -135,6 +136,7 @@ UI =
   localPlot : false
   localDiv  : false
   sprintTime: false
+  nav       : false
   
   updateRemainingEntities : ->
     if @localDiv
@@ -163,10 +165,8 @@ UI =
     setInterval @updateSprintStatus, 1000
       
     $(document).bind 'contextmenu', -> false
-
-    $("#wrapper").addClass("dragdealer")      
-    $("#map").addClass('handle')
-    new Dragdealer 'wrapper', vertical: true
+    
+    $("#map").draggable({scroll: false})
 
     $(document).mousewheel (e, delta) =>
       if delta > 0
@@ -187,6 +187,7 @@ UI =
           plot.resize()
           d = 500 * @zoomLevel
           $(plot.front).parent().css left: "#{d*plot.manager.gridX}px", top: "#{d*plot.manager.gridY}px"
+      
       @draw()
       
     
@@ -194,6 +195,15 @@ UI =
       UI.tool = $(this).data("tool")
       $("#palate li").removeClass("selected")
       $(this).addClass("selected")
+  
+  scrollTo : ($e) ->
+    $f = $("#wrapper")
+    offset = $e.offset()
+    offput = $f.offset()
+    dx = (offset.left - offput.left + $("body").width()*0.5) / ($f.width())
+    dy = (offset.top - offput.top + $("body").height()*0.5) / ($f.height())
+    console.log "Scroll", [offset.left, offset.top], [offput.left, offput.top], [dx, dy]
+    @nav.setValue(dx, dy)
   
   addPlot : (manager, interactive = false) ->
     $div = $("<div/>").addClass("plot").appendTo($("#map"))
@@ -221,5 +231,14 @@ UI =
     (@plots[manager.gridX] ?= [])[manager.gridY] = p
     p.drawTiles()
     p.drawEntities()
+    @bottomRight = [Math.max(@bottomRight[0], p.size*(1+manager.gridX)),
+                    Math.max(@bottomRight[1], p.size*(1+manager.gridY))]
     
+    css = 
+      top: "-#{@bottomRight[1]}px"
+      left: "-#{@bottomRight[0]}px"
+      width: "#{2*@bottomRight[0]}px"
+      height: "#{2*@bottomRight[1]}px"
+    #$("#wrapper").css(css)
+                      
     $div.css left: "#{p.size*manager.gridX}px", top: "#{p.size*manager.gridY}px"
