@@ -79,8 +79,8 @@ class Plot
   coordsToSquare : (e) ->
     offset = $(@front).offset()
     
-    [Math.floor((e.pageX - offset.left)/@scale/UI.zoomLevel),
-     Math.floor((e.pageY - offset.top)/@scale/UI.zoomLevel)]
+    [Math.floor((e.pageX - offset.left)/@scale),
+     Math.floor((e.pageY - offset.top)/@scale)]
 
   clearLast : () ->
     if @lastMouseMove
@@ -110,10 +110,10 @@ class Plot
     if entity = @manager.getEntityAt(x, y)
       if e.which == 3 # right click
         @manager.removeEntityAt(x, y)
-        now.entityRemoved e
+        now.entityRemoved x, y
       else
         @manager.rotateEntityClockwise(x, y)
-        now.entityAdded entity
+        now.entityRotated x, y
     else if UI.tool
       e = new (window[UI.tool])([x,y], 1, true)
       @manager.addEntity e
@@ -170,9 +170,9 @@ UI =
 
     $(document).mousewheel (e, delta) =>
       if delta > 0
-        @zoomLevel *= 1.2
+        @zoomLevel *= 1.15
       else
-        @zoomLevel /= 1.2
+        @zoomLevel /= 1.15
       
       @zoomLevel = Math.max(0.1, Math.min(1, @zoomLevel))
       
