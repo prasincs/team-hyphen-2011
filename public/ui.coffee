@@ -33,14 +33,11 @@ class Plot
       @laser laser
         
   laser : (e) ->
-    console.log e
     @pen.beginPath()
     @pen.strokeStyle = e.color
     for segment in e.segments
-      console.log segment
       [sx, sy] = segment.start.position
       [ex, ey] = segment.end.position
-      console.log "Line", [sx, sy], [ex, ey]
       @pen.moveTo((sx+0.5)*@scale, (sy+0.5)*@scale)
       @pen.lineTo((ex+0.5)*@scale, (ey+0.5)*@scale)
     @pen.closePath()
@@ -137,6 +134,7 @@ UI =
   worldDims : [2500, 2500]
   localPlot : false
   localDiv  : false
+  sprintTime: false
   
   updateRemainingEntities : ->
     if @localDiv
@@ -151,7 +149,18 @@ UI =
         plot.drawTiles()
         plot.drawEntities()  
   
+  updateSprintStatus : =>
+    return unless typeof @sprintTime == 'number'
+    if @sprintTime > 0
+      $("#sprintTimer").text(Math.round((@sprintTime - Date.now())/1000))
+      $("#sprintText").text("left in sprint")
+    else
+      $("#sprintTimer").text(Math.round((@sprintTime + Date.now())/-1000))
+      $("#sprintText").text("until next sprint")
+  
   installHandlers : ->
+    
+    setInterval @updateSprintStatus, 1000
       
     $(document).bind 'contextmenu', -> false
 
@@ -205,6 +214,9 @@ UI =
       $div.mouseup   (e) -> p.clickHandler(e) or true
       $div.mouseout  (e) -> p.clearLast()     or true
       @updateRemainingEntities()
+    
+    if old = @plots[manager.gridX]?[manager.gridY]
+      $(old.front).parent().remove()
     
     (@plots[manager.gridX] ?= [])[manager.gridY] = p
     
