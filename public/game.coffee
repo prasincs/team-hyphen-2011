@@ -8,11 +8,11 @@ class GameManager
 
     addEntity: (entity) ->
         succeeded = false
-        if !this.getEntityAt(entity.position[0], entity.position[1])
+        if !@getEntityAt(entity.position[0], entity.position[1])
             if @numEntitiesByType[entity.type] < @puzzle.getMaxForType(entity.type)
                    succeeded = @board.add(entity)
-                   this.incrementEntityType(entity.type)
-                   this.addToChanged(entity.position)
+                   @incrementEntityType(entity.type)
+                   @addToChanged(entity.position)
 
         return succeeded
     
@@ -21,7 +21,6 @@ class GameManager
 
     getEntityAt: (x, y) ->
         result = @board.getAt(x, y)
-        if result is {} then return false else return result
 
     flushChanged: () ->
         @changed = []
@@ -32,24 +31,24 @@ class GameManager
 
     removeEntityAt: (x, y) ->
         occupant = @board.getAt(x, y)
-        if occupant isnt {}
-            this.decrementEntityType(entity.type)
+        if occupant
+            @decrementEntityType(entity.type)
 
         @board.setAt(x, y, {})
     
     incrementEntityType: (type) ->
-        @numEntitiesByType[entity.type] = @numEntitiesByType[entity.type] + 1
+        @numEntitiesByType[entity.type] += 1
 
     decrementEntityType: (type) ->
-        @numEntitiesByType[entity.type] = @numEntitiesByType[entity.type] - 1
+        @numEntitiesByType[entity.type] -= 1
     
     rotateEntityClockwise: (x, y) ->
-        this.getEntityAt(x, y).rotateClockwise()
-        this.addToChanged(x, y)
+        @getEntityAt(x, y).rotateClockwise()
+        @addToChanged(x, y)
 
     rotateEntityCounterClockwise: (x, y) ->
-        this.getEntityAt(x, y).rotateCounterClockwise()
-        this.addToChanged(x, y)
+        @getEntityAt(x, y).rotateCounterClockwise()
+        @addToChanged(x, y)
 
     isSolved: (x, y) ->
         # Basic idea is to walk each laser and make sure the path has the following properties
@@ -57,7 +56,7 @@ class GameManager
         #   - Ends at a valid end point
         #   - Every entity in between accepts it.
         
-        results = [walkLaser(laser) for laser in this.board.lasers]
+        results = [walkLaser(laser) for laser in @board.lasers]
 
     walkLaser: (laser) ->
         start = laser.chain[0]
@@ -65,11 +64,8 @@ class GameManager
         
         if end.type isnt Constants.EntityType.END or
            start.type is Constants.EntityType.END
-
             return false
         
-        dx = 0
-        dy = 0
         currentPos = start.position
         prevPos = currentPos
         currentEntity = start
@@ -77,94 +73,64 @@ class GameManager
         success = false
 
         Directions =
-            N: 1
-            S: 2
-            E: 3
-            W: 4
+            N: 0
+            S: 1
+            E: 2
+            W: 3
+
         dir = null
 
         turnLeft = () ->
-            switch dir
-                when Directions.N
-                    dx = -1
-                    dy = 0
-                    dir = Directions.W
-                when Directions.S
-                    dx = 1
-                    dy = 0
-                    dir = Directions.E
-                when Directions.E
-                    dx = 0
-                    dy = 1
-                    dir = Directions.S
-                when Directions.W
-                    dx = 0
-                    dy = -1
-                    dir = Directions.N
+            dir = (dir + 1) % 4
 
-         turnRight = () ->
+        turnRight = () ->
+            dir = (dir - 1) % 4
+
+        move = () ->
             switch dir
                 when Directions.N
-                    dx = 1
-                    dy = 0
-                    dir = Directions.E
+                    currentPos = [currentPos[0] - 1, currentPos[1]]
                 when Directions.S
-                    dx = -1
-                    dy = 0
-                    dir = Directions.W
+                    currentPos = [currentPos[0], currentPos[1] + 1]
                 when Directions.E
-                    dx = 0
-                    dy = -1
-                    dir = Directions.S
+                    currentPos = [currentPos[0] - 1, currentPos[1]]
                 when Directions.W
-                    dx = 0
-                    dy = 1
-                    dir = Directions.N
+                    currentPos = [currentPos[0] + 1, currentPos[1]]
+
 
         while i < laser.chain.length
             entityOnSpace = @board.getAt(currentPos[0], currentPos[1])
-            if entityOnSpace isnt {}
-                i = i + 1
+            if entityOnSpace 
+                i = += 1
             
             # Reached the end successfully
             if entityOnSpace.type is Constants.EntityType.END
                 success = true
                 break
-            else if !entityOnSpace.accept(laser)
+            else if not entityOnSpace.accept(laser)
                 break
             else
-                if entityOnSpace isnt {}
+                if entityOnSpace
                     switch entityOnSpace.type
                         when Constants.EntityType.MIRROR
                             # Figure out which direction we bounce off the mirror
                             switch entityOnSpace.direction
-                                when Constants.EntityOrient.NW
+                                when Constants.EntityOrient.NW, Constants.EntityOrient.SE
                                     switch dir
                                         when Directions.N, Directions.S then turnRight()
                                         when Directions.E, Directions.W then turnLeft()
 
-                                when Constants.EntityOrient.NE
+                                when Constants.EntityOrient.NE, Constants.EntityOrient.SW
                                     switch dir
                                         when Directions.N, Directions.S then turnLeft()
                                         when Directions.E, Directions.W then turnRight()
-                                
-                                when Constants.EntityOrient.SW
-                                    switch dir
-                                        when Directions.N, Directions.S then turnLeft()
-                                        when Directions.E, Directions.W then turnRight()
-                                when Constants.EntityOrient.SE
-                                    switch dir
-                                        when Directions.N, Directions.S then turnRight()
-                                        when Directions.E, Directions.W then turnLeft()
 
                     prevPos = currentPos
-                    currentPos = [currentPos[0] + dx, currentPos[1] + dy]
-
-
+                    move()
 
 class Board
     constructor: (@size) ->
-        @grid =(({} for x in [0...@size]) for y in [0...@size])
+        @grid =((false for x in [0...@size]) for y in [0...@size])
         @lasers = []
 
     add: (entity) ->
@@ -178,9 +144,8 @@ class Board
             return true
 
     getAt: (x, y) ->
-        result = @grid[y][x]
-        if result is {} then return false else return result
-
+        return @grid[y][x]
+        
 class Puzzle
     constructor: () ->
 
@@ -246,8 +211,4 @@ class Laser
 
     truncate: () ->
         @chain.pop()
-class LaserSegment
-    constructor: (@source, @sink) ->
-
-    isValid: (board) ->
         
