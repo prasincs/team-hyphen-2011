@@ -33,14 +33,11 @@ class Plot
       @laser laser
         
   laser : (e) ->
-    console.log e
     @pen.beginPath()
     @pen.strokeStyle = e.color
     for segment in e.segments
-      console.log segment
       [sx, sy] = segment.start.position
       [ex, ey] = segment.end.position
-      console.log "Line", [sx, sy], [ex, ey]
       @pen.moveTo((sx+0.5)*@scale, (sy+0.5)*@scale)
       @pen.lineTo((ex+0.5)*@scale, (ey+0.5)*@scale)
     @pen.closePath()
@@ -121,12 +118,11 @@ class Plot
       e = new (window[UI.tool])([x,y], 1, true)
       @manager.addEntity e
       now.entityAdded e
-      
-    $("#palate li").each (e) =>
-      e.find("span").text(@manager.remainingEntities(Constants.EntityType[e.data("tool").toUpperCase()]))
-      
+      UI.tool = false
+      $("#palate li").removeClass("selected")
       
     @drawEntities()
+    UI.updateRemainingEntities()
     @clearLast()
     
 UI =
@@ -137,14 +133,34 @@ UI =
   tool      : false
   worldDims : [2500, 2500]
   localPlot : false
-      
+  localDiv  : false
+  sprintTime: false
+  
+  updateRemainingEntities : ->
+    if @localDiv
+      for e in $("#palate li")
+        e = $(e)
+        name = Constants.EntityType[e.data("tool").toUpperCase()]
+        e.find("span").text(@localPlot.manager.remainingEntities(name))
+    
   draw : ->
     for row in @plots when row
       for plot in row when plot
         plot.drawTiles()
         plot.drawEntities()  
   
+  updateSprintStatus : =>
+    return unless typeof @sprintTime == 'number'
+    if @sprintTime > 0
+      $("#sprintTimer").text(Math.round((@sprintTime - Date.now())/1000))
+      $("#sprintText").text("left in sprint")
+    else
+      $("#sprintTimer").text(Math.round((@sprintTime + Date.now())/-1000))
+      $("#sprintText").text("until next sprint")
+  
   installHandlers : ->
+    
+    setInterval @updateSprintStatus, 1000
       
     $(document).bind 'contextmenu', -> false
 
@@ -161,9 +177,9 @@ UI =
       @zoomLevel = Math.max(0.1, Math.min(1, @zoomLevel))
       
       if @zoomLevel < 0.5
-        $("#palate").fadeOut()
+        $("header").fadeOut()
       else
-        $("#palate").fadeIn()
+        $("header").fadeIn()
         
       $("canvas").attr width: 500*@zoomLevel, height: 500*@zoomLevel
       for row in @plots when row
@@ -174,7 +190,10 @@ UI =
       @draw()
       
     
-    $("#palate li").click (e) -> UI.tool = $(this).data("tool")
+    $("#palate li").click ->
+      UI.tool = $(this).data("tool")
+      $("#palate li").removeClass("selected")
+      $(this).addClass("selected")
   
   addPlot : (manager, interactive = false) ->
     $div = $("<div/>").addClass("plot").appendTo($("#map"))
@@ -188,11 +207,16 @@ UI =
     p = new Plot(manager, fg, mg, bg)
     
     if interactive
-      @localPlot.unbind().removeClass("local") if @localPlot
-      @localPlot = $div.addClass("local")
+      @localDiv.unbind().removeClass("local") if @localPlot
+      @localDiv = $div.addClass("local")
+      @localPlot = p
       $div.mousemove (e) -> p.hoverHandler(e) or true
       $div.mouseup   (e) -> p.clickHandler(e) or true
       $div.mouseout  (e) -> p.clearLast()     or true
+      @updateRemainingEntities()
+    
+    if old = @plots[manager.gridX]?[manager.gridY]
+      $(old.front).parent().remove()
     
     (@plots[manager.gridX] ?= [])[manager.gridY] = p
     

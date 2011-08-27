@@ -10,10 +10,12 @@ $ ->
   
   UI.draw()
   
+  reconstitute = (blank, data) -> data.__proto__ = blank
   
   now = window.now ?= {}
 
   now.startPlot = (x, y, puzzle, clientId) ->
+    reconstitute new Puzzle(), puzzle
     UI.addPlot new GameManager(puzzle, x, y), now.core.clientId == clientId
     
   now.addEntity = (x, y, e) ->
@@ -21,3 +23,19 @@ $ ->
     
   now.removeEntity = (x, y) ->
     UI.plots[x][y].removeEntityAt(x,y)
+    
+  now.updateScores = (spintScores, highscores) ->
+    unimplemented
+  
+  now.puzzleCompleted = ->
+    # Modal dialog to req new puzzle
+    unimplemented
+    
+  now.startSprint = (timeLeft) ->
+    UI.sprintTime = Date.now() + timeLeft
+  
+  now.endSprint = (timeLeft) ->
+    UI.sprintTime = - timeLeft - Date.now()
+
+  now.ready ->
+    now.requestPlot 1

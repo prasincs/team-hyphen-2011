@@ -1,3 +1,6 @@
+if require?
+  Constants = require('./common').Constants
+
 class GameManager
     constructor: (@puzzle, @gridX, @gridY) ->
         @board = new Board(10)
@@ -244,7 +247,7 @@ class Puzzle
 
 class GridEntity
     constructor: (@position, @orientation, @mobility) ->
-
+    
     rotateTo: (orientation) ->
         @orientation = orientation
 
@@ -335,3 +338,12 @@ class LaserSegment
     constructor: (@start, @end, @laser, @direction) ->
         if @start.type is Constants.EntityType.START
             @direction = @start.direction
+
+exports ?= {}
+exports.GameManager = GameManager
+exports.LaserSegment = LaserSegment
+exports.Board = Board
+exports.Puzzle = Puzzle
+exports.Laser = Laser
+exports.Prism = Prism
+exports.GridEntity = GridEntity

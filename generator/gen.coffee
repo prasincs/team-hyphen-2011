@@ -228,4 +228,3 @@ exports.pickPenultimate = pickPenultimate
 exports.pickPoints = pickPoints
 exports.genBoard = genBoard
 exports.getNewPicked = getNewPicked
-
