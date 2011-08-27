@@ -120,13 +120,12 @@ class Plot
     else if UI.tool
       e = new (window[UI.tool])([x,y], 1, true)
       @manager.addEntity e
-      now.entityAdded e
-      
-    $("#palate li").each (e) =>
-      e.find("span").text(@manager.remainingEntities(Constants.EntityType[e.data("tool").toUpperCase()]))
-      
+      now.entityAdded e   
+      UI.tool = false
+      $("#palate li").removeClass("selected")
       
     @drawEntities()
+    UI.updateRemainingEntities()
     @clearLast()
     
 UI =
@@ -137,7 +136,15 @@ UI =
   tool      : false
   worldDims : [2500, 2500]
   localPlot : false
-      
+  localDiv  : false
+  
+  updateRemainingEntities : ->
+    if @localDiv
+      for e in $("#palate li")
+        e = $(e)
+        name = Constants.EntityType[e.data("tool").toUpperCase()]
+        e.find("span").text(@localPlot.manager.remainingEntities(name))
+    
   draw : ->
     for row in @plots when row
       for plot in row when plot
@@ -161,9 +168,9 @@ UI =
       @zoomLevel = Math.max(0.1, Math.min(1, @zoomLevel))
       
       if @zoomLevel < 0.5
-        $("#palate").fadeOut()
+        $("header").fadeOut()
       else
-        $("#palate").fadeIn()
+        $("header").fadeIn()
         
       $("canvas").attr width: 500*@zoomLevel, height: 500*@zoomLevel
       for row in @plots when row
@@ -174,7 +181,10 @@ UI =
       @draw()
       
     
-    $("#palate li").click (e) -> UI.tool = $(this).data("tool")
+    $("#palate li").click ->
+      UI.tool = $(this).data("tool")
+      $("#palate li").removeClass("selected")
+      $(this).addClass("selected")
   
   addPlot : (manager, interactive = false) ->
     $div = $("<div/>").addClass("plot").appendTo($("#map"))
@@ -188,11 +198,13 @@ UI =
     p = new Plot(manager, fg, mg, bg)
     
     if interactive
-      @localPlot.unbind().removeClass("local") if @localPlot
-      @localPlot = $div.addClass("local")
+      @localDiv.unbind().removeClass("local") if @localPlot
+      @localDiv = $div.addClass("local")
+      @localPlot = p
       $div.mousemove (e) -> p.hoverHandler(e) or true
       $div.mouseup   (e) -> p.clickHandler(e) or true
       $div.mouseout  (e) -> p.clearLast()     or true
+      @updateRemainingEntities()
     
     (@plots[manager.gridX] ?= [])[manager.gridY] = p
     
