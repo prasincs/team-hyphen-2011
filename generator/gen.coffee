@@ -1,76 +1,217 @@
-randInt = (range) -> Math.floor(Math.random()*(range+1))
+Assert = {}
+Assert.error = (msg) ->
+    console.trace()
+    throw ("ASSERT FAILED: " + msg)
+Assert.equals = (a,b,msg) -> Assert.error(msg) unless a is b
+Assert.false  = (expr,msg) -> Assert.equals(expr,false,msg)
+Assert.true   = (expr,msg) -> Assert.equals(expr,true, msg)
+Assert.exists = (expr,msg) -> Assert.true(expr?,msg)
 
-dedupedLength = (arr) ->
+Util = {}
+Util.dedup = (arr) ->
     obj = {}
     obj[x.toString(10)] = true for x in arr
-    len = 0
-    len += 1 for k,v of obj
-    len
+    k for k,v of obj
 
-randIntExclude = (range,excluded) ->
-    result = randInt(range - (dedupedLength excluded))
+Rand = {}
+    # random int from 0 to range (inclusive)
+Rand.int = (range) -> Math.floor(Math.random()*(range+1))
+    # generates a random int from 0 to range that's not in excluded
+Rand.intExclude = (range,excluded) ->
+    excluded = Util.dedup(excluded)
+    # -1 shouldn't be included here
+    excluded = x for x in excluded if x >= 0
+    Assert.false(range <= excluded.length,"all possible values in range are excluded")
+    result = Rand.int(range - excluded.length)
     for i in excluded
-        if result >= i and i >= 0 then result += 1
-    if result < 0 then throw "randIntExclude < 0... " + result + " " + range
+        if result >= i then result += 1
+    Assert.true(result >= 0 and result <= range,"result is outside bounds: " + result)
     result
-
-uniqueRandInts = (range) ->
+Rand.uniqueInts = (range,count,excluded=[]) ->
+    Assert.exists(excluded,"excluded must be an array")
     ints = []
-    for i in [0...range]
-        int = randIntExclude(range,ints)
+    for i in [0...count]
+        int = Rand.intExclude(excluded.concat(ints))
         ints.push(int)
     ints
 
-getNewPicked = (from,to) ->
-    [fX,fY,fDir] = from
-    [tX,tY,tDir] = to
-    if fDir is 'h'
-        if fY isnt tY then throw "fDir is h, fY should equal tY"
-        [x,fY] for x in [fX..tX]
-    else
-        if fX isnt tX then throw "fDir is v, fX should equal tX"
-        [fX,y] for y in [fY..tY]
+class Pt1
+    constructor: (@x,@y,@dir,edge=false,size=10) ->
+        bounds = if edge then [-1,size] else [0,size-1]
+        Assert.true(@x >= bounds[0],"bad grid coordinates (#{@x} < #{bounds[0]})")
+        Assert.true(@y >= bounds[0],"bad grid coordinates (#{@y} < #{bounds[0]})")
+        Assert.true(@x <= bounds[1],"bad grid coordinates (#{@x} > #{bounds[1]})")
+        Assert.true(@y <= bounds[1],"bad grid coordinates (#{@y} > #{bounds[1]})")
+    check: (other) ->
+        switch @dir
+            when 'h' then other.y is @y
+            when 'v' then other.x is @x
 
-pickNext = (current,size,picked) ->
-    [cX,cY,cDir] = current
-    if cDir is 'h'
-        excluded = (x for [x,y] in picked when y is cY)
-        newX = randIntExclude(size-1,excluded)
-        pick = [newX,cY,'v']
-    else
-        excluded = (y for [x,y] in picked when x is cX)
-        newY = randIntExclude(size-1,excluded)
-        pick = [cX,newY,'h']
-    picked = picked.concat(getNewPicked(current,pick))
-    [pick,picked]
+class Mirror
+    constructor: (@x,@y,@orientation) ->
 
-pickPenultimate = (current,end) ->
-    [cX,cY,cDir] = current
-    [eX,eY,eDir] = end
-    if cDir is eDir then throw "directions shouldn't be the same"
-    if cDir is 'h'
-        [eX,cY,'v']
-    else
-        [cX,eY,'h']
+    setOrientation: (prev,next) ->
+        [isLeft,isUp] = [prev.x < @x, next.y < @y]
+        [isRight,isDown] = [not isLeft, not isUp]
+        console.log("#{isLeft} != #{isRight}, #{isUp} != #{isDown}")
+        # nw:   ne:   sw:  se:
+        #   n   n     p \   / p
+        # p /   \ p     n   n
+        if      isLeft  and isUp   then @orientation = 'nw'
+        else if isRight and isUp   then @orientation = 'ne'
+        else if isLeft  and isDown then @orientation = 'sw'
+        else if isRight and isDown then @orientation = 'se'
+        else Assert.error("impossible case (setOrientation)")
+        
+    assignDirections: (start,end,points) ->
+        points.unshift(start)
+        points.push(end)
+        mirrors = []
+        for [x,y,d],i in points[1...(points.length-1)]
+            [prev,next] = [points[i],points[i+2]]
+            if d is 'h' then [prev,next] = [next,prev]
+            if prev[0] < x and next[1] < y
+                #   n
+                # p /
+                mirrors.push([x,y,'nw'])
+            if prev[0] > x and next[1] < y
+                # n
+                # \ p
+                mirrors.push([x,y,'ne'])
+            if prev[0] < x and next[1] > y
+                # p \
+                #   n
+                mirrors.push([x,y,'sw'])
+            if prev[0] > x and next[1] > y
+                # / p
+                # n
+                mirrors.push([x,y,'se'])
+        mirrors
 
-pickPoints = (start,end,size,n=2,picked=null) ->
-    unless picked
-        picked = [ [start[0],start[1]], [end[0],end[1]] ]
-        if end[2] is 'v'
-            picked = picked.concat([end[0],y] for y in [0...size])
+class Color
+    constructor: (@color,@parent,endCount=1) ->
+        @pickStartpoint()
+        @solutionPoints = []
+        @excludedEnds = []
+        @usedPoints = []
+        @mirrors = []
+        @addEndpoint() for i in [0...endCount]
+    pickStartpoint: => @start = @pickEdgepoint()
+    addEndpoint: =>
+        Assert.exists(@start,'@start must be set before adding end points')
+        @ends ?= []
+        combined = @ends.concat([@start])
+        end = @pickEdgepoint(combined)
+        switch end.dir
+            when 'v'
+                newExcl = ([end.x,y] for y in [0...@parent.size])
+                @excludedEnds = @excludedEnds.concat(newExcl)
+            when 'h'
+                newExcl = ([x,end.y] for x in [0...@parent.size])
+                @excludedEnds = @excludedEnds.concat(newExcl)
+        @ends.push(end)
+    pickEdgepoint: (excluded=[]) =>
+        done = false
+        until done
+            dir = ['h','v'][Rand.int(1)]
+            coord1 = [-1,@parent.size][Rand.int(1)]
+            coord2 = Rand.int(@parent.size-1)
+            pt = switch dir
+                when 'h' then new Pt1(coord1,coord2,dir,edge=true)
+                when 'v' then new Pt1(coord2,coord1,dir,edge=true)
+                else Assert.error("dir should be one of 'h' or 'v' (pickEdgepoint)")
+            if (ex for ex in excluded when pt.check(ex)).length is 0 then done = true
+        pt
+    # gets a list of points in a line from start to end (inclusive of end points)
+    getLine: (start,end) =>
+        switch start.dir
+            when 'h'
+                Assert.true(start.y is end.y, "direction is h, y values should match")
+                ([x,start.y] for x in [start.x..end.x])
+            when 'v'
+                Assert.true(start.x is end.x, "direction is v, x values should match")
+                ([start.x,y] for y in [start.y..end.y])
+            else Assert.error("dir must be one of 'h' or 'v'")
+    # does the work of creating the 'board'
+    make: (count,prev=undefined) =>
+        # TODO: remove this assert
+        Assert.true(@ends.length is 1,"only 1 endpoint supported (for now)")
+        prev ?= @start
+        @makePath(count,prev)
+        @makeMirrors()
+        # TODO: finish up actual solution generation here
+    # makes actual mirror objects from the solution points
+    makeMirrors: =>
+        console.log(@solutionPoints)
+        pts = (x for x in @solutionPoints)
+        pts.unshift([@start.x,@start.y])
+        # TODO: make this work with multiple ends
+        pts.push([@ends[0].x,@ends[0].y])
+        prev = @start
+        for m,i in pts[1...(pts.length-1)]
+            [prev,next] = [pts[i],pts[i+2]]
+            mirror = new Mirror(m.x,m.y)
+            mirror.setOrientation(prev,next)
+            @mirrors.push(mirror)
+    pickPenultimate: (prev,end) =>
+        # then we need to add another point first
+        if prev.dir is end.dir then prev = @pickPoint(prev)
+        pt = switch prev.dir
+            when 'h' then new Pt1(end.x,prev.y,'v')
+            when 'v' then new Pt1(prev.x,end.y,'h')
+            else Assert.error("dir must be one of 'h' or 'v'")
+        @usedPoints = @usedPoints.concat(@getLine(prev,pt))
+        @solutionPoints.push(pt)
+        pt
+    pickPoint: (prev) =>
+        used = @usedPoints.concat(@excludedEnds)
+        pt = switch prev.dir
+            when 'h'
+                excluded = (pt[0] for pt in used when pt[1] is prev.y)
+                newX = Rand.intExclude(@parent.size-1,excluded)
+                new Pt1(newX,prev.y,'v')
+            when 'v'
+                excluded = (pt[1] for pt in used when pt[0] is prev.x)
+                newY = Rand.intExclude(@parent.size-1,excluded)
+                new Pt1(prev.x,newY,'h')
+            else Assert.error("dir must be one of 'h' or 'v'")
+        line = @getLine(prev,pt)
+        Assert.true(prev.x isnt pt.x or prev.y isnt pt.y,
+                    "points may not overlap (#{pt.x},#{pt.y})")
+        @usedPoints = @usedPoints.concat(@getLine(prev,pt))
+        @solutionPoints.push(pt)
+        pt
+    makePath: (count,prev) =>
+        if count is 1
+            # TODO: make this work with multiple endings
+            @pickPenultimate(prev,@ends[0])
         else
-            picked = picked.concat([x,end[1]] for x in [0...size])
-    if n is 1
-        next = pickPenultimate(start,end)
-        picked = picked.slice(2+size)
-        picked = picked.concat(getNewPicked(start,next))
-        picked = picked.concat(getNewPicked(next,end))
-        [[next],picked]
-    else
-        [next,picked] = pickNext(start,size,picked)
-        [list,picked] = pickPoints(next,end,size,n-1,picked=picked)
-        list.unshift(next)
-        [list,picked]
+            point = @pickPoint(prev)
+            @makePath(count-1,prev=point)
+
+class Puzzle
+    constructor: (@count=4,@size=10,@start=false,@end=false,@difficulty='easy') ->
+        @red   = new Color('red'  ,this)
+        #@green = new Color('green',this)
+        #@blue  = new Color('blue' ,this)
+        @red.make(@count)
+    # maybe TODO: print out things that aren't from the red part
+    printAscii: ->
+        board = (('.' for i in [0...(@size+2)]) for j in [0...(@size+2)])
+        for mirror in @red.mirrors
+            board[mirror.x+1][mirror.y+1] = switch mirror.orientation
+                when 'ne','sw' then '\\'
+                when 'nw','se' then '/'
+                else Assert.error("orientation must be one of ne,sw,nw,se (is #{mirror.orientation})")
+        s = @red.start
+        e = @red.ends[0]
+        board[s.x+1][s.y+1] = 's'
+        board[e.x+1][e.y+1] = 'e'
+        for line in board
+            console.log(line.join(' '))
+
+p = new Puzzle()
+p.printAscii()
 
 randomPoint = (size) ->
     [randInt(size-1),randInt(size-1)]
@@ -83,42 +224,6 @@ pickRandomPoints = (size,blocked,number=10) ->
         if (point+'') not in blockedStrs then points.push(point)
     points
 
-assignDirections = (start,end,points) ->
-    points.unshift(start)
-    points.push(end)
-    mirrors = []
-    for [x,y,d],i in points[1...(points.length-1)]
-        [prev,next] = [points[i],points[i+2]]
-        if d is 'h' then [prev,next] = [next,prev]
-        if prev[0] < x and next[1] < y
-            #   n
-            # p /
-            mirrors.push([x,y,'nw'])
-        if prev[0] > x and next[1] < y
-            # n
-            # \ p
-            mirrors.push([x,y,'ne'])
-        if prev[0] < x and next[1] > y
-            # p \
-            #   n
-            mirrors.push([x,y,'sw'])
-        if prev[0] > x and next[1] > y
-            # / p
-            # n
-            mirrors.push([x,y,'se'])
-    mirrors
-
-selectEdgePoint = (size,exclude=false) ->
-    done = false
-    until done
-        d = ['h','v'][randInt(1)]
-        a = [-1,size][randInt(1)]
-        b = randInt(size-1)
-        pt = if d is 'h' then [a,b,d] else [b,a,d]
-        if exclude
-            if pt[0] isnt exclude[0] or pt[1] isnt exclude[1] then done = true
-        else done = true
-    pt
 
 class M
     constructor = (@x,@y,@orientation) -> @type = M
@@ -179,7 +284,6 @@ class AsciiBoard
         for [x,y,d] in mirrorList
             @addMirror(x,y,d)
 
-
 drawBoard = () ->
     size = 10
     [start,generated,blocked,end] = genBoard(n=4,size=size)
@@ -219,12 +323,6 @@ makeBoard = () ->
     b.add(new Endpoint([eX,eY]),d)
     [b,mirrors2]
 
-makeBoard()
-
 exports ?= {}
-exports.randIntExclude = randIntExclude
-exports.pickNext = pickNext
-exports.pickPenultimate = pickPenultimate
-exports.pickPoints = pickPoints
-exports.genBoard = genBoard
-exports.getNewPicked = getNewPicked
+exports.Rand = Rand
+
