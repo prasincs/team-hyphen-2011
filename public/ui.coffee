@@ -32,7 +32,6 @@ class Plot
     
   mirror : (e) ->
     [x, y] = e.position
-    console.log [x, y]
     
     @pen.strokeStyle = e.color || "#000000"
     @pen.beginPath()
@@ -91,7 +90,6 @@ class Plot
       else
         @manager.rotateEntityClockwise(x, y)
     else if UI.tool
-      console.log "ADDING ENTITY"
       @manager.addEntity(new (window[UI.tool])([x,y], 1, true))
     @drawEntities()
     @clearLast()
@@ -135,5 +133,6 @@ UI =
   addPlot : (puzzle, $div) ->
     p = new Plot(puzzle, $div.find('.fg')[0], $div.find('.mg')[0], $div.find('.bg')[0])
     $div.mousemove (e) -> p.hoverHandler(e) or true
-    $div.mouseup (e) -> p.clickHandler(e) or true
+    $div.mouseup (e)   -> p.clickHandler(e) or true
+    $div.mouseout (e)  -> p.clearLast()     or true
     @plots.push p
