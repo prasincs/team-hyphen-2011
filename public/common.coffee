@@ -1,18 +1,11 @@
 # Common stuff / Constants
 
 Constants =
-    EntityMobility :
-        # Can't be turned or removed
-        STATIC: 1
-
-        # Can be turned and removed
-        DYNAMIC: 2
-
     EntityOrient :
-        UL: 1
-        UR: 2
-        DL: 3
-        DR: 4
+        NW: 1
+        NE: 2
+        SE: 3
+        SW: 4
 
     EntityType :
         MIRROR: 1
@@ -24,5 +17,3 @@ Constants =
         # Endpoint
         END: 5
 
-
-exports.Constants = Constants
