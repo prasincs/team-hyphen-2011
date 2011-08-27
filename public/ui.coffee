@@ -120,7 +120,8 @@ class Plot
     else if UI.tool
       e = new (window[UI.tool])([x,y], 1, true)
       @manager.addEntity e
-      now.entityAdded e      
+      now.entityAdded e   
+      UI.tool = false   
       
     @drawEntities()
     UI.updateRemainingEntities()
