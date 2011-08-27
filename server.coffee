@@ -9,3 +9,10 @@ server.listen process.env.PORT || 7777
 
 nowjs    = require 'now'
 everyone = nowjs.initialize(server, {socketio: {'log level': 1}})
+//mongodb = require 'mongodb'
+//Db = mongodb.Db
+//Connection = mongodb.Connection
+
+
+
+

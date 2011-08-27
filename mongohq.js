@@ -20,7 +20,7 @@ exports.init = function(options) {
         });
     });
 
-    return db;
+    return this;
 }
 
 // register a collection for use
