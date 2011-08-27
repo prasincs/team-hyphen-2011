@@ -1,12 +1,15 @@
 class Plot
   
   constructor : (@manager, @front, @mid, @back) ->
-    @fp = @front.getContext '2d'
-    @mp = @mid.getContext '2d'
-    @bp = @back.getContext '2d'
+    @fp  = @front.getContext '2d'
+    @mp  = @mid.getContext '2d'
+    @bp  = @back.getContext '2d'
+    @pen = @mp
+    @resize()
+    
+  resize : ->
     @size  = @front.height
     @scale = @size / 10.0
-    @pen = @mp
   
   drawTiles : ->
     @bp.fillStyle = '#999999'
@@ -24,6 +27,23 @@ class Plot
       for y in [0..9]
         if e = @manager.getEntityAt(x, y)
           @[e.constructor.name.toLowerCase()](e)
+    for laser in @manager.board.lasers
+      @laser laser
+        
+  laser : (e) ->
+    console.log e
+    @pen.beginPath()
+    @pen.strokeStyle = e.color
+    for segment in e.segments
+      console.log segment
+      [sx, sy] = segment.start.position
+      [ex, ey] = segment.end.position
+      console.log "Line", [sx, sy], [ex, ey]
+      @pen.moveTo((sx+0.5)*@scale, (sy+0.5)*@scale)
+      @pen.lineTo((ex+0.5)*@scale, (ey+0.5)*@scale)
+    @pen.closePath()
+    @pen.stroke()
+    
 
   block : (e) ->
     [x,y] = e.position
@@ -71,7 +91,7 @@ class Plot
   hoverHandler : (e) ->
     @clearLast()
 
-    return if UI.zoomLevel < 0.25
+    return if UI.zoomLevel < 0.5
 
     @lastMouseMove = [x,y] = @coordsToSquare e
         
@@ -84,7 +104,7 @@ class Plot
       @[UI.tool.toLowerCase()](new (window[UI.tool])([x,y], 1, true))
     
   clickHandler : (e) ->
-    return if UI.zoomLevel < 0.25
+    return if UI.zoomLevel < 0.5
     
     [x, y] = @coordsToSquare e
     
@@ -103,13 +123,15 @@ UI =
   topLeft   : [0, 0]
   plots     : []
   container : false
-  mousedown : false
   tool      : false
   worldDims : [2500, 2500]
+  localPlot : false
       
   draw : ->
-    for plot in @plots
-      plot.drawTiles()
+    for row in @plots when row
+      for plot in row when plot
+        plot.drawTiles()
+        plot.drawEntities()
   
   
   reposition : (origin = false) ->
@@ -126,23 +148,13 @@ UI =
   
   
   installHandlers : ->
-    $(document).mousedown (e) ->
-      UI.mousedown = [e.pageX, e.pageY]
-      
-    $(document).mouseup (e) ->
-      UI.mousedown = false
       
     $(document).bind 'contextmenu', -> false
-      
-    $(document).mousemove (e) =>
-      if @mousedown
-        # pan, TODO: make this scale properly
-        @topLeft[0] += (e.pageX - @mousedown[0]) / @zoomLevel
-        @topLeft[1] += (e.pageY - @mousedown[1]) / @zoomLevel
-        @reposition()
-        @mousedown = [e.pageX, e.pageY]
-      true
-      
+
+    $("#wrapper").addClass("dragdealer")      
+    $("#map").addClass('handle')
+    d = new Dragdealer 'wrapper', vertical: true
+
     $(document).mousewheel (e, delta) =>
       if delta > 0
         @zoomLevel *= 1.2
@@ -151,20 +163,40 @@ UI =
       
       @zoomLevel = Math.max(0.1, Math.min(1, @zoomLevel))
       
-      if @zoomLevel < 0.25
+      if @zoomLevel < 0.5
         $("#palate").fadeOut()
       else
         $("#palate").fadeIn()
         
-      @reposition("#{e.pageX}px #{e.pageY}px")
+      $("canvas").attr width: 500*@zoomLevel, height: 500*@zoomLevel
+      for row in @plots when row
+        for plot in row when plot
+          plot.resize()
+          d = 500 * @zoomLevel
+          $(plot.front).parent().css left: "#{d*plot.manager.gridX}px", top: "#{d*plot.manager.gridY}px"
+      @draw()
       
     
     $("#palate li").click (e) -> UI.tool = $(this).data("tool")
   
-  addPlot : (puzzle, $div, interactive) ->
-    p = new Plot(puzzle, $div.find('.fg')[0], $div.find('.mg')[0], $div.find('.bg')[0])
+  addPlot : (manager, interactive = false) ->
+    $div = $("<div/>").addClass("plot").appendTo($("#map"))
+    for cls in ['bg', 'mg', 'fg']
+      $div.append $("<canvas/>").attr(width: 500, height: 500).addClass("#{cls}")
+    
+    fg = $div.find('.fg')[0]
+    mg = $div.find('.mg')[0]
+    bg = $div.find('.bg')[0]
+    
+    p = new Plot(manager, fg, mg, bg)
+    
     if interactive
+      @localPlot.unbind().removeClass("local") if @localPlot
+      @localPlot = $div.addClass("local")
       $div.mousemove (e) -> p.hoverHandler(e) or true
-      $div.mouseup (e)   -> p.clickHandler(e) or true
-      $div.mouseout (e)  -> p.clearLast()     or true
-    @plots.push p
+      $div.mouseup   (e) -> p.clickHandler(e) or true
+      $div.mouseout  (e) -> p.clearLast()     or true
+    
+    (@plots[manager.gridX] ?= [])[manager.gridY] = p
+    
+    $div.css left: "#{p.size*manager.gridX}px", top: "#{p.size*manager.gridY}px"
