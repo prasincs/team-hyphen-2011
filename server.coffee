@@ -11,6 +11,12 @@ port = if process.env.NODE_ENV == 'production' then 80  else 8000
 server.listen port, ->
   console.log 'Ready'
 
-#nowjs    = require 'now'
-#everyone = nowjs.initialize(server, {socketio: {'log level': 1}})
+nowjs    = require 'now'
+everyone = nowjs.initialize(server, 
+  {socketio: {'log level': 1}})
+
+DB = require './DB'
+
+everyone.now.addUser = (user, callback)->
+  DB.users.addUser user, callback
 

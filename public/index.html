@@ -4,7 +4,7 @@
         <meta http-equiv="Content-type" content="text/html; charset=utf-8">
         <title>We need a title</title>
         <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js" type="text/javascript" charset="utf-8"></script>
-        <!-- script src="/nowjs/now.js" type="text/javascript" charset="utf-8"></script -->
+        <script src="/nowjs/now.js" type="text/javascript" charset="utf-8"></script>
         <script src="dragdealer.js" type="text/javascript" charset="utf-8"></script>
         <script src="jquery.mousewheel.js" type="text/javascript" charset="utf-8"></script>
         <script src="common.js" type="text/javascript" charset="utf-8"></script>
@@ -79,7 +79,14 @@
                 cursor: pointer;
             }
         </style>
-    </head>
+      </head>
+      <script type="text/javascript">
+        now.ready(function(){
+                  /*now.addUser({username:"test"}, function(){
+                              console.log("user added");
+                              });*/
+        });
+      </script>
     <body>
         <ol id="palate">
             <li data-tool="Mirror">Mirror</li>
