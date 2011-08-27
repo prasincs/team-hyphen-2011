@@ -10,7 +10,13 @@
     "node": "~v0.4.11"
   },
   "dependencies": {
-    "nko": "~0.1.0"
+    "nko": "~0.1.0",
+    "node-static": "~0.5.9",
+    "coffee-script": "~1.1.2",
+    "now": "~0.7.4"
   },
-  "devDependencies": {}
+  "devDependencies": {},
+  "scripts": {
+    "start": "coffee server.coffee"
+  }
 }
