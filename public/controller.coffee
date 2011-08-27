@@ -21,3 +21,6 @@ $ ->
     
   now.removeEntity = (x, y) ->
     UI.plots[x][y].removeEntityAt(x,y)
+
+  now.ready ->
+    now.requestPlot 1

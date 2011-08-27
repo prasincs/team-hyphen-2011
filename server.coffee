@@ -30,7 +30,7 @@ everyone.now.requestPlot= (difficulty) ->
   x = 1
   y = 0
   puzzle = PuzzleGenerator.randomPuzzle(difficulty)
-  #gm = new GameManager (puzzle, x ,y)
+  gm = new GameManager puzzle, x ,y
   everyone.now.startPlot(x, y, puzzle, @user.clientId)
-  #plots[idMap[@user.clientId]] = gm
+  plots[idMap[@user.clientId]] = gm
 
