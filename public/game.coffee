@@ -21,8 +21,7 @@ class GameManager
 
     getEntityAt: (x, y) ->
         result = @board.getAt(x, y)
-        if result is {} then return false
-          
+        if result is {} then return false else return result
 
     flushChanged: () ->
         @changed = []
@@ -180,7 +179,7 @@ class Board
 
     getAt: (x, y) ->
         result = @grid[y][x]
-        if result is {} then return false
+        if result is {} then return false else return result
 
 class Puzzle
     constructor: () ->
