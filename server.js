@@ -7,7 +7,7 @@
     req.addListener('end', function() {
       return files.serve(req, resp);
     });
-    server.listen(8080);
+    server.listen(80);
     nowjs = require('now');
     return everyone = nowjs.initialize(server, {
       socketio: {

@@ -17,6 +17,6 @@
   },
   "devDependencies": {},
   "scripts": {
-    "start": "coffee --compile server.coffee"
+    "start": "coffee server.coffee"
   }
 }
