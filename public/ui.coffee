@@ -110,10 +110,10 @@ class Plot
     if entity = @manager.getEntityAt(x, y)
       if e.which == 3 # right click
         @manager.removeEntityAt(x, y)
-        now.entityRemoved e
+        now.entityRemoved x, y
       else
         @manager.rotateEntityClockwise(x, y)
-        now.entityAdded entity
+        now.entityRotated x, y
     else if UI.tool
       e = new (window[UI.tool])([x,y], 1, true)
       @manager.addEntity e
