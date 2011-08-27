@@ -13,13 +13,30 @@ Lasers come from two sources:
     -Adjacent board?
 
 Entities (detail):
-    -Base
-        >Position(x,y)
-    -Mirror (Base)
-        >Orientation (degrees where 0 is facing up. +45 is to the right corner)
-        >Type (Static | Dynamic)
-    -Block (Base)
-        >
-    -Filter (Base)
-        >
+    -GridEntity:
+        -Position(x, y)
+        -Orientation(degrees?)
+        -Type (Static | Dynamic)
+        =>RotateTo()
+        =>RotateClockwise()
+        =>RotateCounterClockwise()
+    -Laser:
+        >Chain ([GridEntity] chain of grid entities this laser is touching from start to finish)
+        >Color
+    -Mirror extends GridEntity
+    -Block extends GridEntity
+    -Filter extends GridEntity
+        >Color (Color this filter accepts)
+    -Block extends GridEntity
+
+Public Stuff (Eli):
+
+    -GameManager(puzzle) (main interface through which you can affect the game the user is currently playing)
+        >board
+        >puzzle
+        =>AddEntity(entity)
+     
+    -Puzzle (Contains puzzle info, restrictions and initial configuration json)
+    -Board (Contains all entities)
+        >entities
 
