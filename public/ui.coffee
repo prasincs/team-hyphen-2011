@@ -147,7 +147,7 @@ UI =
     for row in @plots when row
       for plot in row when plot
         plot.drawTiles()
-        plot.drawEntities()  
+        plot.drawEntities()
   
   updateSprintStatus : =>
     return unless typeof @sprintTime == 'number'
@@ -164,7 +164,7 @@ UI =
       
     $(document).bind 'contextmenu', -> false
 
-    $("#wrapper").addClass("dragdealer")      
+    $("#wrapper").addClass("dragdealer")
     $("#map").addClass('handle')
     new Dragdealer 'wrapper', vertical: true
 
