@@ -104,7 +104,7 @@ class GameManager
                 break
             else if not entityOnSpace.accept(laser)
                 break
-            else 
+            else
                 if entityOnSpace
                     switch entityOnSpace.type
                         when Constants.EntityType.MIRROR
@@ -150,14 +150,14 @@ class Puzzle
 class GridEntity
     constructor: (@position, @orientation, @mobility) ->
 
-    rotateTo: (degrees) ->
-        return true
+    rotateTo: (orientation) ->
+        @orientation = orientation
 
     rotateClockwise: () ->
-        return true
+        @orientation = (@orientation + 1) % 4
 
     rotateCounterClockwise: () ->
-        return true
+        @orientation = (@orientation - 1) % 4
 
     # Does this entity accept this laser?
     # Acceptance means it doesn't straight up block it
@@ -167,7 +167,7 @@ class GridEntity
 class Mirror extends GridEntity
     constructor: (@position, @orientation, @mobility) ->
         @type = Constants.EntityType.MIRROR
-        super @position @orientation @mobility
+        super(@position, @orientation, @mobility)
 
     accepts: (laser) ->
         return true
@@ -175,7 +175,7 @@ class Mirror extends GridEntity
 class Block extends GridEntity
     constructor: (@position, @orientation, @mobility) ->
         @type = Constants.EntityType.BLOCK
-        super @position @orientation @mobility
+        super(@position, @orientation, @mobility)
 
     accepts: (laser) ->
         return false
@@ -183,7 +183,7 @@ class Block extends GridEntity
 class Filter extends GridEntity
     constructor: (@position, @orientation, @mobility, @color) ->
         @type = Constants.EntityType.FILTER
-        super @position @orientation @mobility
+        super(@position, @orientation, @mobility)
 
     accepts: (laser) ->
         return laser.color is color
@@ -191,7 +191,7 @@ class Filter extends GridEntity
 class Prism extends GridEntity
     constructor: (@position, @orientation, @mobility) ->
         @type = Constants.EntityType.PRISM
-        super @position @orientation @mobility
+        super(@position, @orientation, @mobility_
 
     accepts: (laser) ->
         return true
