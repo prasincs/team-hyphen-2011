@@ -53,8 +53,9 @@ everyone.now.entityAdded = (entity)->
       new Filter entity.position, entity.orientation, entity.mobility
     else
       new GridEntity entity.position, entity.orientation, entity.mobility
-    
-  everyone.now.addEntity userPlot(@user).position, et
+  
+  plot = userPlot @user
+  everyone.now.addEntity [plot.gridX, plot.gridY], et
 
 everyone.now.entityRemoved = (x, y) ->
   everyone.now.removeEntity userPlot(@user), x, y
