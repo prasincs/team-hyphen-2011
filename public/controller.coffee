@@ -10,6 +10,7 @@ $ ->
   
   UI.draw()
   
+  
   now = window.now ?= {}
 
   now.startPlot = (x, y, puzzle, local = false) ->
