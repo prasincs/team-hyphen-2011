@@ -52,7 +52,7 @@ everyone.now.entityAdded = (entity)->
   plot = userPlot @user
   everyone.now.addEntity [plot.gridX, plot.gridY], et
 
-veryone.now.entityRemoved = (x, y) ->
+everyone.now.entityRemoved = (x, y) ->
   everyone.now.removeEntity userPlot(@user), x, y
   
 everyone.now.entityRotated = (x, y) ->
