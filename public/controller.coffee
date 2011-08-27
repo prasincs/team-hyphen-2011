@@ -13,8 +13,8 @@ $ ->
   
   now = window.now ?= {}
 
-  now.startPlot = (x, y, puzzle, local = false) ->
-    UI.addPlot new GameManager(puzzle, x, y), local
+  now.startPlot = (x, y, puzzle, clientId) ->
+    UI.addPlot new GameManager(puzzle, x, y), now.core.clientId == clientId
     
   now.addEntity = (x, y, e) ->
     UI.plots[x][y].addEntity(e)
