@@ -40,12 +40,24 @@ class GameManager
     
     traceLaser: (laser) ->
         # Trace one laser 1 / num_lasers as HARD AS IT CAN
+        
+        if laser.segments.length 
+            startPoint = laser.segments[laser.segments.length-1].start
+        else
+            startPoint = laser.startpoint
 
         dy = 0
         dx = 0
-        x = laser.startpoint.position[0]
-        y = laser.startpoint.position[1]
+        x = startPoint.position[0]
+        y = startPoint.position[1]
+        currDir = startPoint.direction
+        branches = []
         
+        unless laser.segments.length
+            firstSeg = new LaserSegment(laser.startpoint, null, laser, currDir)
+            laser.segments.push(firstSeg)
+
+
         mapDir = (dir) ->
             dirs = Constants.LaserDirection
             switch dir
@@ -61,9 +73,6 @@ class GameManager
                 when dirs.E
                     dy = 0
                     dx = 1
-        currDir = laser.startpoint.direction
-        firstSeg = new LaserSegment( laser.startpoint, null, laser, currDir )
-        laser.segments.push(firstSeg)
  
         while(x >= 0 and y >= 0 and x < @board.size-1 and y < @board.size-1)
             mapDir(currDir)
@@ -73,7 +82,6 @@ class GameManager
             unless current
                 current = @board.getEndPoint(x, y)
             unless not current
-                # Something is here
 
                 # Connect the end of the last laser to the thing.
                 previous = laser.segments[laser.segments.length - 1]
@@ -89,6 +97,7 @@ class GameManager
                         break
 
                     when Constants.EntityType.BLOCK
+                        # Do nothing because ITS A FUCKING BLOCK
                         break
                     when Constants.EntityType.FILTER
                         if current.color isnt laser.color
@@ -99,23 +108,31 @@ class GameManager
                             laser.segments.push(seg)
                     when Constants.EntityType.PRISM
                         # ugh
+                        directions = current.splitDirection(currDir)
+                        currDir = directions[1]
+
+                        branched = new Laser(laser.color, laser.startpoint)
+                        branched.segments = laser.segments.slice(0)
+                        branched.chain = laser.chain.slice(0)
+                        branched.segments.push(new LaserSegment(current, null, laser, directions[0]))
+
+                        # Store the temporary laser and the grid coord at which the split happened
+                        # so we can merge.
+                        branches.push([branched, [x, y]])
+
+                        # Continue tracing the laser that took the left fork
+                        @traceLaser(branched)
+                        
+                        # Continue tracing the laser that took the right fork 
+                        seg = new LaserSegment(current, null, laser, currDir)
+                        laser.segments.push(seg)
+
                         break
+        if branches.length
+            laser.merge(branches)
 
     removeEntity: (entity) ->
         removeEntityAt(entity.position[0], entity.position[1])
-
-    updateLasers: (entity) ->
-        # Ensure the laser segments are still correct given the new entity
-        correctLaser(laser, entity) for laser in board.lasers when not validateLaser(laser)
-        
-    isBetween: (segment, entity) ->
-        startPos = segment.start.position
-        endPos = segment.end.position
-
-        if startPos[0] is endPos[0]
-            entity in (@board.grid[startPos[0]][startPos[1]+1..endPos[1]-1])
-        else if startPos[1] is endPos[1]
-            entity in ((@board.grid[startPos[1]][k] for k in [0...@board.size])[startPos[0]+1..endPos[0]-1])
 
     getEntityAt: (x, y) ->
         result = @board.getAt(x, y)
@@ -147,10 +164,12 @@ class GameManager
     
     rotateEntityClockwise: (x, y) ->
         @getEntityAt(x, y).rotateClockwise()
+        @traceAllLasers()
         @addToChanged(x, y)
 
     rotateEntityCounterClockwise: (x, y) ->
         @getEntityAt(x, y).rotateCounterClockwise()
+        @traceAllLasers()
         @addToChanged(x, y)
 
     isSolved: (x, y) ->
@@ -164,6 +183,7 @@ class GameManager
         # For now, just take the win condition to be 'all lasers reaching an end state through valid moves'
         finalResult = true
         (finalResult &= e.satisfied for e in @board.endPoints)
+
         return !!(finalResult)
     
     validateSegment: (segment) ->
@@ -192,18 +212,16 @@ class GameManager
         ret = true
         (ret &= result for result in results)
 
-        lastPoint = laser.segments[laser.segments.length-1].end
-        if not lastPoint
+        hitsEnd = (seg.end for seg in laser.segments when seg.end and seg.end.type is Constants.EntityType.END)
+        if not hitsEnd.length
            return false
         else 
 
             # Flag the end point as satisfied if this laser is valid and the last entity on the laser
             # is an end point.
-            if lastPoint.type is Constants.EntityType.END and ret
-                lastPoint.satisfied = true
-            return !!ret and
-                   laser.segments[laser.segments.length-1].end.type is Constants.EntityType.END and
-                   laser.segments[0].start.type is Constants.EntityType.START
+            if hitsEnd.length and ret
+                e.satisfied = true for e in hitsEnd
+            return !!ret
 
 class Board
     constructor: (@size) ->
@@ -314,6 +332,12 @@ class Prism extends GridEntity
     constructor: (@position, @orientation, @mobility) ->
         @type = Constants.EntityType.PRISM
         super(@position, @orientation, @mobility)
+    
+    splitDirection: (direction) ->
+        result =
+            left: (direction - 1) % 4
+            right: (direction + 1) % 4
+        return result
 
     accepts: (laser) -> false
  
@@ -332,6 +356,17 @@ class Laser
     truncate: () ->
         @chain.pop()
         @segments.pop()
+
+    merge: (laserPackets) ->
+
+        # Merge each laser packet (laser itself and its divergence point)
+        mergeSingle(packet[0], packet[1]) for packet in laserPackets
+
+    mergeSingle: (laser, split) ->
+        
+        # Find the point at which this laser deviates and grab every segment after that 
+        toMerge = (laser.segments[laser.segments.indexof(k)-1..laser.segments.length] for k in laser.segments when k.position[0] is split[0] and k.position[1] is split[1])
+        @segments.push(toMerge)
 
 class LaserSegment
     constructor: (@start, @end, @laser, @direction) ->
