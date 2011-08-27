@@ -1,0 +1,25 @@
+Entities:
+    -Mirror (Static, Dynamic)
+        >Single-sided
+        >Double-sided
+    -Prism
+    -Filter
+    -Laser
+    -Laser emitter thing (Turnable?)
+    -Block
+
+Lasers come from two sources:
+    -Laser emitter
+    -Adjacent board?
+
+Entities (detail):
+    -Base
+        >Position(x,y)
+    -Mirror (Base)
+        >Orientation (degrees where 0 is facing up. +45 is to the right corner)
+        >Type (Static | Dynamic)
+    -Block (Base)
+        >
+    -Filter (Base)
+        >
+
