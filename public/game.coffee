@@ -1,3 +1,6 @@
+if require?
+  Constants = require('./common').Constants
+
 class GameManager
     constructor: (@puzzle, @gridX, @gridY) ->
         @board = new Board(10)
