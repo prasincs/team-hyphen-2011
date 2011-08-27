@@ -69,7 +69,6 @@ class GameManager
             mapDir(currDir)
             x += dx
             y += dy
-            console.log(x + ' ' + y)
             current = @board.getAt(x, y)
             unless current
                 current = @board.getEndPoint(x, y)
