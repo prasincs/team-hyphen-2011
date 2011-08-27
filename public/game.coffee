@@ -257,7 +257,7 @@ class Puzzle
     constructor: () ->
         # Actual values to be filled in once we get settled on a representation
         @maxEntitiesByType = {}
-        (@maxEntitiesByType[k] = 0) for _, k of Constants.EntityType
+        (@maxEntitiesByType[k] = 10) for _, k of Constants.EntityType
 
     getMaxForType: (entityType) ->
         @maxEntitiesByType[entityType]
