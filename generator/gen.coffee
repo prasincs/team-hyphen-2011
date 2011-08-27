@@ -69,10 +69,11 @@ randomPoint = (size) ->
     [randInt(size-1),randInt(size-1)]
 
 pickRandomPoints = (size,blocked,number=10) ->
+    blockedStrs = ((b+'') for b in blocked)
     points = []
     while points.length < number
         point = randomPoint(size)
-        if point not in blocked then points.push(point)
+        if (point+'') not in blockedStrs then points.push(point)
     points
 
 genBoard = (n=2,size=10) ->
@@ -80,7 +81,8 @@ genBoard = (n=2,size=10) ->
     startPoint = [-1,5,'h']
     endPoint = [10,2,'h']
     [points,blocked] = pickPoints(startPoint,endPoint,size,n)
-    [startPoint,points,blocked,endPoint]
+    blocks = pickRandomPoints(size,blocked,number=30)
+    [startPoint,points,blocks,endPoint]
 
 class AsciiBoard
     constructor: (size) ->
