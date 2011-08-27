@@ -70,6 +70,7 @@ class GameManager
     validateSegment: (segment) ->
         console.log @board
         if(segment.start.position[0] is segment.end.position[0])
+            # Check if any of the entities between the start / end on this row are blockers.
             colBetween = @board.grid[segment.start.position[0]][segment.start.position[1]+1..segment.end.position[1]-1]
             
             blockers = (elem for elem in colBetween when elem and not elem.accepts(segment.laser))
@@ -77,7 +78,13 @@ class GameManager
             return not blockers.length
 
         else if(segment.start.position[1] is segment.end.position[1])
-            return false
+            # Check if any of the entities between the start / end on this column are blockers
+            row = (@board.grid[segment.start.position[1]][k] for k in [0...@board.size])
+            row = row[segment.start.position[0]+1..segment.end.position[0]-1]
+            
+            blockers = (elem for elem in row when elem and not elem.accepts(segment.laser))
+            
+            return not blockers.length
 
     walkLaser: (laser) ->
         start = laser.chain[0]
