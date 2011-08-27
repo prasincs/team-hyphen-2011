@@ -3,10 +3,15 @@ class GameManager
         @board = new Board(10)
         @changed = []
         @numEntitiesByType = {}
+        @endpoints = []
         
         (@numEntitiesByType[k] = 0) for _, k of Constants.EntityType
 
     addEntity: (entity) ->
+        if entity.type is Constants.EntityType.START
+            @startpoint = entity
+        else if entity.type is Constants.EntityType.END
+            @endpoints.push entity
         succeeded = false
         if !@getEntityAt(entity.position[0], entity.position[1])
             if @numEntitiesByType[entity.type] < @puzzle.getMaxForType(entity.type)
@@ -32,9 +37,9 @@ class GameManager
     removeEntityAt: (x, y) ->
         occupant = @board.getAt(x, y)
         if occupant
-            @decrementEntityType(entity.type)
+            @decrementEntityType(occupant.type)
 
-        @board.setAt(x, y, {})
+        @board.setAt(x, y, false)
     
     incrementEntityType: (type) ->
         @numEntitiesByType[type] += 1
@@ -65,15 +70,24 @@ class GameManager
     validateSegment: (segment) ->
         console.log @board
         if(segment.start.position[0] is segment.end.position[0])
-            col = @board[segment.start.position[0]]
-            blockers = (elem for elem in @board.grid[segment.start.position[0]] when elem and not elem.accepts(segment.laser) and elem.position[1] isnt segment.start.position[1])
+            # Check if any of the entities between the start / end on this row are blockers.
+            colBetween = @board.grid[segment.start.position[0]][segment.start.position[1]+1..segment.end.position[1]-1]
+            
+            blockers = (elem for elem in colBetween when elem and not elem.accepts(segment.laser))
 
             return not blockers.length
 
         else if(segment.start.position[1] is segment.end.position[1])
-            return false
+            # Check if any of the entities between the start / end on this column are blockers
+            row = (@board.grid[segment.start.position[1]][k] for k in [0...@board.size])
+            row = row[segment.start.position[0]+1..segment.end.position[0]-1]
+            
+            blockers = (elem for elem in row when elem and not elem.accepts(segment.laser))
+            
+            return not blockers.length
 
     walkLaser: (laser) ->
+"""[
         start = laser.chain[0]
         end = laser.chain[laser.chain.length - 1]
         
@@ -128,6 +142,7 @@ class GameManager
 
                     prevPos = currentPos
                     move()
+"""
 
 class Board
     constructor: (@size) ->
@@ -190,7 +205,7 @@ class Mirror extends GridEntity
         @type = Constants.EntityType.MIRROR
         super(@position, @orientation, @mobility)
 
-    accepts: (laser) -> true
+    accepts: (laser) -> false
 
 class Block extends GridEntity
     constructor: (@position) ->
@@ -204,14 +219,14 @@ class Filter extends GridEntity
         @type = Constants.EntityType.FILTER
         super(@position, @orientation, @mobility)
 
-    accepts: (laser) -> laser.color == color
+    accepts: (laser) -> laser.color == @color
 
 class Prism extends GridEntity
     constructor: (@position, @orientation, @mobility) ->
         @type = Constants.EntityType.PRISM
         super(@position, @orientation, @mobility)
 
-    accepts: (laser) -> true
+    accepts: (laser) -> false
  
 class Laser
     constructor: (@color, @startpoint) ->
@@ -219,7 +234,7 @@ class Laser
         @segments = []
 
     extend: (entity) ->
-        if entity.accepts this
+        if entity.accepts(this) or entity.type is Constants.EntityType.MIRROR
             segment = new LaserSegment(@segments[@segments.length - 1]?.start or @startpoint, entity, this)
             
             
