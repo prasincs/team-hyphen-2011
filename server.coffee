@@ -6,6 +6,8 @@ DB          = require './DB'
 Constants   = require('./public/common').Constants
 Game        = require './public/game'
 GameManager = Game.GameManager
+Puzzle = Game.Puzzle
+GridEntity = Game.GridEntity
 Puzzle      = Game.Puzzle
 
 server = require('http').createServer (req, resp) -> 
@@ -33,3 +35,14 @@ everyone.now.requestPlot= (difficulty) ->
   everyone.now.startPlot(x, y, puzzle, @user.clientId)
   plots[idMap[@user.clientId]] = gm
 
+everyone.now.entityAdded = (entity)->
+  console.log entity
+  #[x,y] = entity.position
+  #entity = new GridEntity entity.position, entity.orientation, entity.mobility
+
+  #everyone.now.addEntity (x, y, entity)
+
+everyone.now.entityRemoved = (entity)->
+  console.log entity
+  #[x,y] = entity.position
+  everyone.now.removeEntity(x,y, entity)

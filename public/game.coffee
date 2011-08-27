@@ -264,7 +264,7 @@ class Puzzle
 
 class GridEntity
     constructor: (@position, @orientation, @mobility) ->
-
+    
     rotateTo: (orientation) ->
         @orientation = orientation
 
@@ -366,4 +366,4 @@ exports.Board = Board
 exports.Puzzle = Puzzle
 exports.Laser = Laser
 exports.Prism = Prism
-
+exports.GridEntity = GridEntity
