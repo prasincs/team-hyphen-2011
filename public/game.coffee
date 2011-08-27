@@ -267,6 +267,7 @@ class Puzzle
 
 class GridEntity
     constructor: (@position, @orientation, @mobility) ->
+      @type ||= 0
     
     rotateTo: (orientation) ->
         @orientation = orientation

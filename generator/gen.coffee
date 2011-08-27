@@ -48,46 +48,21 @@ class Pt1
             when 'v' then other.x is @x
 
 class Mirror
-    constructor: (@x,@y,@orientation) ->
+    constructor: (@x,@y,@direction) ->
 
     setOrientation: (prev,next) ->
+        if @direction is 'h' then [prev,next] = [next,prev]
         [isLeft,isUp] = [prev.x < @x, next.y < @y]
         [isRight,isDown] = [not isLeft, not isUp]
-        console.log("#{isLeft} != #{isRight}, #{isUp} != #{isDown}")
         # nw:   ne:   sw:  se:
-        #   n   n     p \   / p
-        # p /   \ p     n   n
+        #   n   n     p \  / p
+        # p /   \ p     n  n
         if      isLeft  and isUp   then @orientation = 'nw'
         else if isRight and isUp   then @orientation = 'ne'
         else if isLeft  and isDown then @orientation = 'sw'
         else if isRight and isDown then @orientation = 'se'
         else Assert.error("impossible case (setOrientation)")
-        
-    assignDirections: (start,end,points) ->
-        points.unshift(start)
-        points.push(end)
-        mirrors = []
-        for [x,y,d],i in points[1...(points.length-1)]
-            [prev,next] = [points[i],points[i+2]]
-            if d is 'h' then [prev,next] = [next,prev]
-            if prev[0] < x and next[1] < y
-                #   n
-                # p /
-                mirrors.push([x,y,'nw'])
-            if prev[0] > x and next[1] < y
-                # n
-                # \ p
-                mirrors.push([x,y,'ne'])
-            if prev[0] < x and next[1] > y
-                # p \
-                #   n
-                mirrors.push([x,y,'sw'])
-            if prev[0] > x and next[1] > y
-                # / p
-                # n
-                mirrors.push([x,y,'se'])
-        mirrors
-
+    
 class Color
     constructor: (@color,@parent,endCount=1) ->
         @pickStartpoint()
@@ -142,15 +117,14 @@ class Color
         # TODO: finish up actual solution generation here
     # makes actual mirror objects from the solution points
     makeMirrors: =>
-        console.log(@solutionPoints)
         pts = (x for x in @solutionPoints)
-        pts.unshift([@start.x,@start.y])
+        pts.unshift(@start)
         # TODO: make this work with multiple ends
-        pts.push([@ends[0].x,@ends[0].y])
+        pts.push(@ends[0])
         prev = @start
         for m,i in pts[1...(pts.length-1)]
             [prev,next] = [pts[i],pts[i+2]]
-            mirror = new Mirror(m.x,m.y)
+            mirror = new Mirror(m.x,m.y,m.dir)
             mirror.setOrientation(prev,next)
             @mirrors.push(mirror)
     pickPenultimate: (prev,end) =>
@@ -200,8 +174,8 @@ class Puzzle
         board = (('.' for i in [0...(@size+2)]) for j in [0...(@size+2)])
         for mirror in @red.mirrors
             board[mirror.x+1][mirror.y+1] = switch mirror.orientation
-                when 'ne','sw' then '\\'
                 when 'nw','se' then '/'
+                when 'ne','sw' then '\\'
                 else Assert.error("orientation must be one of ne,sw,nw,se (is #{mirror.orientation})")
         s = @red.start
         e = @red.ends[0]

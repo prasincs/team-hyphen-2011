@@ -20,6 +20,8 @@ Constants =
         FILTER: 4
         END: 5
         START: 6
+        
+    RevEntityType : ['GridEntity', 'Mirror', 'Prism', 'Block', 'Filter', 'Endpoint', 'Startpoint']
 
 exports ?= {}
 exports.Constants = Constants
