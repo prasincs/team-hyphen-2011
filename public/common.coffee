@@ -1,14 +1,19 @@
 # Common stuff / Constants
 
-Constants = 
-    EntityType = 
-        # Can't be turned or removed
-        STATIC: 1
+Constants =
+    EntityOrient :
+        NW: 1
+        NE: 2
+        SE: 3
+        SW: 4
 
-        # Can be turned and removed
-        DYNAMIC: 2
+    EntityType :
+        MIRROR: 1
+        PRISM: 2
+        BLOCK: 3
+        FILTER: 4
+
         
         # Endpoint
-        END: 3
+        END: 5
 
-exports.Constants = Constants
