@@ -121,7 +121,8 @@ class Plot
       e = new (window[UI.tool])([x,y], 1, true)
       @manager.addEntity e
       now.entityAdded e   
-      UI.tool = false   
+      UI.tool = false
+      $("#palate li").removeClass("selected")
       
     @drawEntities()
     UI.updateRemainingEntities()
@@ -140,8 +141,9 @@ UI =
   updateRemainingEntities : ->
     if @localDiv
       for e in $("#palate li")
-        name = Constants.EntityType[$(e).data("tool").toUpperCase()]
-        $(e).find("span").text(@localPlot.manager.remainingEntities(name))
+        e = $(e)
+        name = Constants.EntityType[e.data("tool").toUpperCase()]
+        e.find("span").text(@localPlot.manager.remainingEntities(name))
     
   draw : ->
     for row in @plots when row
@@ -179,7 +181,10 @@ UI =
       @draw()
       
     
-    $("#palate li").click (e) -> UI.tool = $(this).data("tool")
+    $("#palate li").click ->
+      UI.tool = $(this).data("tool")
+      $("#palate li").removeClass("selected")
+      $(this).addClass("selected")
   
   addPlot : (manager, interactive = false) ->
     $div = $("<div/>").addClass("plot").appendTo($("#map"))

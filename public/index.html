@@ -62,12 +62,16 @@
                 position: absolute;
             }
             
+            header {
+                position: absolute;
+                right: 0; top: 50px;
+                z-index: 1000;
+                margin: 0; padding: 0;
+            }
+            
             #palate {
                 list-style-type: none;
                 margin: 0; padding: 0;
-                position: absolute;
-                right: 0; top: 200px;
-                z-index: 1000;
             }
             
             #palate li {
@@ -86,14 +90,26 @@
             }
             #palate li span::before { content: "(" }
             #palate li span::after  { content: ")" }
+            #palate li.selected {
+              background: #00ffaa;
+            }
         </style>
       </head>
     <body>
-        <ol id="palate">
-            <li data-tool="Mirror">Mirror<span></span></li>
-            <li data-tool="Prism">Prism<span></span></li>
-            <li data-tool="Filter">Filter<span></span></li>
-        </ol>
+        <header>
+            <h1>scoreboard</h1>
+            ...
+            <h1>controls</h1>
+            <menu id="menu">
+                <li><a href="#">stuff</a></li>
+            </menu>
+            <h1>palate</h1>
+            <menu id="palate">
+                <li data-tool="Mirror"><a href="#">Mirror</a><span></span></li>
+                <li data-tool="Prism"><a href="#">Prism</a><span></span></li>
+                <li data-tool="Filter"><a href="#">Filter</a><span></span></li>
+            </menu>
+        </header>
         <div id="wrapper">
             <div id="map">
             </div>
