@@ -120,13 +120,10 @@ class Plot
     else if UI.tool
       e = new (window[UI.tool])([x,y], 1, true)
       @manager.addEntity e
-      now.entityAdded e
-      
-    $("#palate li").each (e) =>
-      e.find("span").text(@manager.remainingEntities(Constants.EntityType[e.data("tool").toUpperCase()]))
-      
+      now.entityAdded e      
       
     @drawEntities()
+    UI.updateRemainingEntities()
     @clearLast()
     
 UI =
@@ -137,7 +134,14 @@ UI =
   tool      : false
   worldDims : [2500, 2500]
   localPlot : false
-      
+  localDiv  : false
+  
+  updateRemainingEntities : ->
+    if @localDiv
+      for e in $("#palate li")
+        name = Constants.EntityType[$(e).data("tool").toUpperCase()]
+        $(e).find("span").text(@localPlot.manager.remainingEntities(name))
+    
   draw : ->
     for row in @plots when row
       for plot in row when plot
@@ -188,11 +192,13 @@ UI =
     p = new Plot(manager, fg, mg, bg)
     
     if interactive
-      @localPlot.unbind().removeClass("local") if @localPlot
-      @localPlot = $div.addClass("local")
+      @localDiv.unbind().removeClass("local") if @localPlot
+      @localDiv = $div.addClass("local")
+      @localPlot = p
       $div.mousemove (e) -> p.hoverHandler(e) or true
       $div.mouseup   (e) -> p.clickHandler(e) or true
       $div.mouseout  (e) -> p.clearLast()     or true
+      @updateRemainingEntities()
     
     (@plots[manager.gridX] ?= [])[manager.gridY] = p
     
