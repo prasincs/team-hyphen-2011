@@ -101,6 +101,7 @@ UI =
   container : false
   mousedown : false
   tool      : false
+  worldDims : [2500, 2500]
       
   draw : ->
     for plot in @plots
@@ -108,9 +109,12 @@ UI =
   
   
   reposition : (origin = false) ->
-    [x, y] = @topLeft
-    x = Math.max(x, 0)
-    y = Math.max(y, 0)
+    [x, y] = @topLeft    
+    bodyW = $("body").width()
+    bodyH = $("body").height()
+    
+    x = Math.min(Math.max(x, 0), @worldDims[0] - bodyW)
+    y = Math.min(Math.max(y, 0), @worldDims[1] - bodyH) 
     
     for prefix in ['', '-o-', '-moz-', '-webkit-', '-ms-']
       @container.css "#{prefix}transform-origin", origin if origin
@@ -128,14 +132,22 @@ UI =
       
     $(document).mousemove (e) =>
       if @mousedown
-        # pan
+        # pan, TODO: make this scale properly
         @topLeft[0] += e.pageX - @mousedown[0]
         @topLeft[1] += e.pageY - @mousedown[1]
         @reposition()
         @mousedown = [e.pageX, e.pageY]
       true
       
-    $(document).mousewheel (e, delta) ->
+    $(document).mousewheel (e, delta) =>
+      if delta > 0
+        @zoomLevel *= 1.2
+      else
+        @zoomLevel /= 1.2
+      
+      @zoomLevel = Math.max(0.1, Math.min(1, @zoomLevel))
+        
+      @reposition("#{e.pageX}px #{e.pageY}px")
       
     
     $("#palate li").click (e) -> UI.tool = $(this).data("tool")
