@@ -101,14 +101,35 @@ assignDirections = (start,end,points) ->
             mirrors.push([x,y,'se'])
     mirrors
 
-genBoard = (n=2,size=10) ->
-    board = [["_" for i in [0...10]] for j in [0...10]]
-    startPoint = [-1,5,'h']
-    endPoint = [10,2,'h']
-    [points,blocked] = pickPoints(startPoint,endPoint,size,n)
-    mirrors = assignDirections(startPoint,endPoint,points)
-    blocks = pickRandomPoints(size,blocked,number=30)
-    [startPoint,mirrors,blocks,endPoint]
+selectEdgePoint = (size,exclude=false) ->
+    done = false
+    until done
+        d = ['h','v'][randInt(1)]
+        a = [-1,size][randInt(1)]
+        b = randInt(size-1)
+        pt = if d is 'h' then [a,b,d] else [b,a,d]
+        if exclude
+            if pt[0] isnt exclude[0] or pt[1] isnt exclude[1] then done = true
+        else done = true
+    pt
+
+genBoard = (n=2,size=10,start=false,end=false) ->
+    [startSet,endSet] = [not not start,not not end]
+    done = false
+    until done
+        try
+            board = [["_" for i in [0...10]] for j in [0...10]]
+            start ||= selectEdgePoint(size,exclude=end)
+            end ||= selectEdgePoint(size,[start[0],start[1]])
+            [points,blocked] = pickPoints(start,end,size,n)
+            mirrors = assignDirections(start,end,points)
+            blocks = pickRandomPoints(size,blocked,number=30)
+            done = true
+        catch e
+            start = false if not startSet
+            end = false if not endSet
+
+    [start,mirrors,blocks,end]
 
 class AsciiBoard
     constructor: (size) ->
@@ -130,18 +151,16 @@ class AsciiBoard
     setStart:  ([x,y,d]) -> @set(x,y,'s')
     setEnd:    ([x,y,d]) -> @set(x,y,'e')
     print: ->
-        console.log("printing:\n")
         for i in [0...@board.length]
             console.log(@board[i].join(' '))
     addMirrors: (mirrorList) ->
-        console.log(mirrorList.length)
         for [x,y,d] in mirrorList
             @addMirror(x,y,d)
 
 
 drawBoard = () ->
     size = 10
-    [start,generated,blocked,end] = genBoard(n=6,size=size)
+    [start,generated,blocked,end] = genBoard(n=4,size=size)
     try
         ab = new AsciiBoard(size)
         for [x,y] in blocked
@@ -159,6 +178,7 @@ drawBoard = () ->
 makeBoard = () ->
     size = 10
     b = new Board(size)
+    done = false
     [[sX,sY,sD],mirrors,blocks,[eX,eY,eD]] = genBoard(n=4,size=size)
     for [x,y,d] in mirrors
         orientmap = {nw:1 ,ne:2 ,se:3, sw:4}
@@ -167,9 +187,9 @@ makeBoard = () ->
     for [x,y] in blocks
         block = new Block([x,y])
         b.add(block)
-    d = if sD is 'h' then if sY is -1 then 'left' else 'right' else if sX is -1 then 'down' else 'up'
+    d = if sD is 'h' then (if sY is -1 then 'left' else 'right') else (if sX is -1 then 'down' else 'up')
     b.add(new Startpoint([sX,sY]),d)
-    d = if eD is 'h' then if eY is -1 then 'left' else 'right' else if eX is -1 then 'down' else 'up'
+    d = if eD is 'h' then (if eY is -1 then 'left' else 'right') else (if eX is -1 then 'down' else 'up')
     b.add(new Endpoint([eX,eY]),d)
     b
 

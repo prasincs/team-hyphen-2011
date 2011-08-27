@@ -4,9 +4,7 @@ files  = new static.Server('./public')
 
 server = require('http').createServer (req, resp) -> 
   req.addListener 'end', -> 
-    files.serve req, resp, (e, res) ->
-      if e and e.status == 404
-        files.serveFile '/not-found.html'
+    files.serve req, resp
   
 server.listen process.env.PORT || 7777
 
