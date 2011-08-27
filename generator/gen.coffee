@@ -14,6 +14,13 @@ randIntExclude = (range,excluded) ->
     if result < 0 then throw "randIntExclude < 0... " + result + " " + range
     result
 
+uniqueRandInts = (range) ->
+    ints = []
+    for i in [0...range]
+        int = randIntExclude(range,ints)
+        ints.push(int)
+    ints
+
 getNewPicked = (from,to) ->
     [fX,fY,fDir] = from
     [tX,tY,tDir] = to
@@ -113,7 +120,13 @@ selectEdgePoint = (size,exclude=false) ->
         else done = true
     pt
 
-genBoard = (n=2,size=10,start=false,end=false) ->
+class M
+    constructor = (@x,@y,@orientation) -> @type = M
+
+class B
+    constructor = (@x,@y) -> @type = B
+
+genBoard = (n=4,size=10,start=false,end=false) ->
     [startSet,endSet] = [not not start,not not end]
     done = false
     until done
@@ -123,13 +136,22 @@ genBoard = (n=2,size=10,start=false,end=false) ->
             end ||= selectEdgePoint(size,[start[0],start[1]])
             [points,blocked] = pickPoints(start,end,size,n)
             mirrors = assignDirections(start,end,points)
-            blocks = pickRandomPoints(size,blocked,number=30)
             done = true
         catch e
             start = false if not startSet
             end = false if not endSet
-
-    [start,mirrors,blocks,end]
+    blocks = pickRandomPoints(size,blocked,number=30)
+    includedMirrorIdxs = uniqueRandInts(rantInt(2))
+    includedMirrors = M(x,y,d) for [x,y,d],i in mirrors when i in includedMirrorIdxs
+    mirrors = M(x,y,d) for [x,y,d],i in mirrors when i not in includedMirrorIdxs
+    newMirrorIdxs = uniqueRandInts(randInt(5))
+    permanent = for [x,y],i in blocks
+        if i in newMirrorIdxs
+            M(x,y,['ne','nw','se','sw'][randInt(3)])
+        else
+            B(x,y)
+    permanent = permanent.concat(includedMirrors)
+    [start,mirrors,permanent,end]
 
 class AsciiBoard
     constructor: (size) ->
@@ -179,21 +201,25 @@ makeBoard = () ->
     size = 10
     b = new Board(size)
     done = false
-    [[sX,sY,sD],mirrors,blocks,[eX,eY,eD]] = genBoard(n=4,size=size)
-    for [x,y,d] in mirrors
-        orientmap = {nw:1 ,ne:2 ,se:3, sw:4}
-        mirror = new Mirror([x,y],orientmap[d],false)
-        b.add(mirror)
-    for [x,y] in blocks
-        block = new Block([x,y])
-        b.add(block)
+    [[sX,sY,sD],mirrors,permanent,[eX,eY,eD]] = genBoard(n=4,size=size)
+    mirrors2 = []
+    orientmap = {nw:1 ,ne:2 ,se:3, sw:4}
+    for m in mirrors
+        mirror = new Mirror([m.x,m.y],orientmap[m.orientation],false)
+        mirrors2.push(mirror)
+    for b in permanent 
+        if b.type is B
+            elem = new Block([b.x,b.y])
+        else
+            elem = new Mirror([b.x,b.y],orientmap[b.orientation])
+        b.add(elem)
     d = if sD is 'h' then (if sY is -1 then 'left' else 'right') else (if sX is -1 then 'down' else 'up')
     b.add(new Startpoint([sX,sY]),d)
     d = if eD is 'h' then (if eY is -1 then 'left' else 'right') else (if eX is -1 then 'down' else 'up')
     b.add(new Endpoint([eX,eY]),d)
-    b
+    [b,mirrors2]
 
-drawBoard()
+makeBoard()
 
 exports ?= {}
 exports.randIntExclude = randIntExclude
