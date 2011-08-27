@@ -1,10 +1,18 @@
-// server.js 
-var http = require('http') 
-
-var app = http.createServer(function (req, res) { 
-res.writeHead(200, { 'Content-Type': 'text/html' }); 
-res.end('Hello, World'); 
-});
-
-app.listen(parseInt(process.env.PORT) || 7777); 
-console.log('Listening on ' + app.address().port);
+(function() {
+  var files, server, static;
+  static = require('node-static');
+  files = new static.Server('./public');
+  server = require('http').createServer(function(req, resp) {
+    var everyone, nowjs;
+    req.addListener('end', function() {
+      return files.serve(req, resp);
+    });
+    server.listen(8080);
+    nowjs = require('now');
+    return everyone = nowjs.initialize(server, {
+      socketio: {
+        'log level': 1
+      }
+    });
+  });
+}).call(this);
