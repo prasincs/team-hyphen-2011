@@ -191,7 +191,7 @@ class Filter extends GridEntity
 class Prism extends GridEntity
     constructor: (@position, @orientation, @mobility) ->
         @type = Constants.EntityType.PRISM
-        super(@position, @orientation, @mobility_
+        super(@position, @orientation, @mobility)
 
     accepts: (laser) ->
         return true
