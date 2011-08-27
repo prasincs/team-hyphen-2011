@@ -63,9 +63,11 @@ class GameManager
         finalResult = (finalResult &= result for result in results)
     
     validateSegment: (segment) ->
+        console.log @board
         if(segment.start.position[0] is segment.end.position[0])
             col = @board[segment.start.position[0]]
-            blockers = [elem for elem in col when (not elem.accept(segment.laser) or elemn.type is Constants.EntityType.MIRROR)]
+            blockers = (elem for elem in @board.grid[segment.start.position[0]] when elem and not elem.accepts(segment.laser) and elem.position[1] isnt segment.start.position[1])
+
             return not blockers.length
 
         else if(segment.start.position[1] is segment.end.position[1])
@@ -167,6 +169,22 @@ class GridEntity
     # Acceptance means it doesn't straight up block it
     accepts: (laser) -> true
 
+
+class Endpoint extends GridEntity
+    constructor: (@position) ->
+        @type = Constants.EntityType.END
+        super(@position, 1, false)
+    
+    accepts: (laser) -> true
+
+class Startpoint extends GridEntity
+    constructor: (@position) ->
+        @type = Constants.EntityType.START
+        super(@position, 1, false)
+    
+    accepts: (laser) -> true
+    
+
 class Mirror extends GridEntity
     constructor: (@position, @orientation, @mobility) ->
         @type = Constants.EntityType.MIRROR
@@ -175,9 +193,9 @@ class Mirror extends GridEntity
     accepts: (laser) -> true
 
 class Block extends GridEntity
-    constructor: (@position, @orientation, @mobility) ->
+    constructor: (@position) ->
         @type = Constants.EntityType.BLOCK
-        super(@position, @orientation, @mobility)
+        super(@position, 1, false)
 
     accepts: (laser) -> false
         
@@ -196,13 +214,16 @@ class Prism extends GridEntity
     accepts: (laser) -> true
  
 class Laser
-    constructor: (@color) ->
+    constructor: (@color, @startpoint) ->
         @chain = []
         @segments = []
 
     extend: (entity) ->
         if entity.accepts this
-            segment = new LaserSegment(@segments[@segments.length - 1].start, entity, this)
+            segment = new LaserSegment(@segments[@segments.length - 1]?.start or @startpoint, entity, this)
+            
+            
+            
             @segments.push(segment)
             @chain.push(entity)
 
