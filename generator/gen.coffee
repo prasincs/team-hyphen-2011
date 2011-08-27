@@ -325,3 +325,4 @@ makeBoard = () ->
 
 exports ?= {}
 exports.Rand = Rand
+
