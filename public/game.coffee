@@ -253,6 +253,7 @@ class Board
 class Puzzle
     constructor: () ->
         # Actual values to be filled in once we get settled on a representation
+        @maxEntitiesByType = {}
         (@maxEntitiesByType[k] = 0) for _, k of Constants.EntityType
 
     getMaxForType: (entityType) ->
