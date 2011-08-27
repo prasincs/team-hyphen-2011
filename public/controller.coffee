@@ -15,8 +15,8 @@ $ ->
   now = window.now ?= {}
 
   now.startPlot = (x, y, puzzle, clientId) ->
-    reconstitute new Puzzle(), puzzle
-    UI.addPlot new GameManager(puzzle, x, y), now.core.clientId == clientId
+    reconstitute new Puzzle(1), puzzle
+    UI.addPlot new GameManager(puzzle, x, y)#, now.core.clientId == clientId
     
   now.addEntity = (x, y, e) ->
     UI.plots[x][y].addEntity(e)
@@ -37,5 +37,4 @@ $ ->
   now.endSprint = (timeLeft) ->
     UI.sprintTime = - timeLeft - Date.now()
 
-  now.ready ->
-    now.requestPlot 1
+  now.requestPlot 1

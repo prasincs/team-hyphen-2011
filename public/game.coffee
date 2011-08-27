@@ -254,10 +254,10 @@ class Board
         return @grid[y][x]
         
 class Puzzle
-    constructor: () ->
+    constructor: (maxEntitiesNum = 0) ->
         # Actual values to be filled in once we get settled on a representation
         @maxEntitiesByType = {}
-        (@maxEntitiesByType[k] = 0) for _, k of Constants.EntityType
+        (@maxEntitiesByType[k] = maxEntitiesNum) for _, k of Constants.EntityType
 
     getMaxForType: (entityType) ->
         @maxEntitiesByType[entityType]
@@ -366,4 +366,6 @@ exports.Board = Board
 exports.Puzzle = Puzzle
 exports.Laser = Laser
 exports.Prism = Prism
+exports.Mirror = Mirror
+exports.Filter = Filter
 exports.GridEntity = GridEntity

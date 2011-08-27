@@ -9,6 +9,10 @@ GameManager = Game.GameManager
 Puzzle = Game.Puzzle
 GridEntity = Game.GridEntity
 Puzzle      = Game.Puzzle
+Mirror      = Game.Mirror
+Prism       =  Game.Prism
+Filter      = Game.Filter
+
 
 server = require('http').createServer (req, resp) -> 
   req.addListener 'end', -> files.serve req, resp
@@ -28,21 +32,29 @@ everyone.now.addUser = (user, callback)->
   DB.users.addUser user, callback
 
 everyone.now.requestPlot= (difficulty) ->
-  x = 1
-  y = 0
-  puzzle = new Puzzle()
+  [x,y] = [1,0]
+  puzzle = new Puzzle(10)
   gm = new GameManager puzzle, x ,y
+  console.log @user.clientId
   everyone.now.startPlot(x, y, puzzle, @user.clientId)
   plots[idMap[@user.clientId]] = gm
 
 everyone.now.entityAdded = (entity)->
   console.log entity
-  #[x,y] = entity.position
-  #entity = new GridEntity entity.position, entity.orientation, entity.mobility
+  [x,y] = entity.position
+  et = new GridEntity entity.position, entity.orientation, entity.mobility
 
-  #everyone.now.addEntity (x, y, entity)
+  switch (entity.type)
+    when Constants.EntityType.MIRROR
+      et = new Mirror entity.position, entity.orientation, entity.mobility
+    when Constants.EntityType.PRISM
+      et = new Prism entity.position, entity.orientation, entity.mobility
+    when Constants.EntityType.FILTER
+      et = new Filter entity.position, entity.orientation, entity.mobility
+    
+  everyone.now.addEntity x, y, et
 
 everyone.now.entityRemoved = (entity)->
   console.log entity
-  #[x,y] = entity.position
+  [x,y] = entity.position
   everyone.now.removeEntity(x,y, entity)
