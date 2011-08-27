@@ -168,9 +168,9 @@ UI =
       @zoomLevel = Math.max(0.1, Math.min(1, @zoomLevel))
       
       if @zoomLevel < 0.5
-        $("#palate").fadeOut()
+        $("header").fadeOut()
       else
-        $("#palate").fadeIn()
+        $("header").fadeIn()
         
       $("canvas").attr width: 500*@zoomLevel, height: 500*@zoomLevel
       for row in @plots when row
