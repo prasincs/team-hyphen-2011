@@ -149,7 +149,7 @@ UI =
     for row in @plots when row
       for plot in row when plot
         plot.drawTiles()
-        plot.drawEntities()  
+        plot.drawEntities()
   
   updateSprintStatus : =>
     return unless typeof @sprintTime == 'number'

@@ -47,47 +47,30 @@ class Pt1
             when 'h' then other.y is @y
             when 'v' then other.x is @x
 
-class Mirror
-    constructor: (@x,@y,@orientation) ->
+class Block
+    constructor: (@x,@y) -> @type = 'block'
+    toString: -> '#'
 
+class Mirror
+    constructor: (@x,@y,@direction) -> @type = 'mirror'
+    toString: ->
+        switch @orientation
+            when 'nw','se' then '/'
+            when 'ne','sw' then '\\'
+            else Assert.error("impossible case")
     setOrientation: (prev,next) ->
+        if @direction is 'h' then [prev,next] = [next,prev]
         [isLeft,isUp] = [prev.x < @x, next.y < @y]
         [isRight,isDown] = [not isLeft, not isUp]
-        console.log("#{isLeft} != #{isRight}, #{isUp} != #{isDown}")
         # nw:   ne:   sw:  se:
-        #   n   n     p \   / p
-        # p /   \ p     n   n
+        #   n   n     p \  / p
+        # p /   \ p     n  n
         if      isLeft  and isUp   then @orientation = 'nw'
         else if isRight and isUp   then @orientation = 'ne'
         else if isLeft  and isDown then @orientation = 'sw'
         else if isRight and isDown then @orientation = 'se'
         else Assert.error("impossible case (setOrientation)")
-        
-    assignDirections: (start,end,points) ->
-        points.unshift(start)
-        points.push(end)
-        mirrors = []
-        for [x,y,d],i in points[1...(points.length-1)]
-            [prev,next] = [points[i],points[i+2]]
-            if d is 'h' then [prev,next] = [next,prev]
-            if prev[0] < x and next[1] < y
-                #   n
-                # p /
-                mirrors.push([x,y,'nw'])
-            if prev[0] > x and next[1] < y
-                # n
-                # \ p
-                mirrors.push([x,y,'ne'])
-            if prev[0] < x and next[1] > y
-                # p \
-                #   n
-                mirrors.push([x,y,'sw'])
-            if prev[0] > x and next[1] > y
-                # / p
-                # n
-                mirrors.push([x,y,'se'])
-        mirrors
-
+    
 class Color
     constructor: (@color,@parent,endCount=1) ->
         @pickStartpoint()
@@ -142,15 +125,14 @@ class Color
         # TODO: finish up actual solution generation here
     # makes actual mirror objects from the solution points
     makeMirrors: =>
-        console.log(@solutionPoints)
         pts = (x for x in @solutionPoints)
-        pts.unshift([@start.x,@start.y])
+        pts.unshift(@start)
         # TODO: make this work with multiple ends
-        pts.push([@ends[0].x,@ends[0].y])
+        pts.push(@ends[0])
         prev = @start
         for m,i in pts[1...(pts.length-1)]
             [prev,next] = [pts[i],pts[i+2]]
-            mirror = new Mirror(m.x,m.y)
+            mirror = new Mirror(m.x,m.y,m.dir)
             mirror.setOrientation(prev,next)
             @mirrors.push(mirror)
     pickPenultimate: (prev,end) =>
@@ -160,7 +142,7 @@ class Color
             when 'h' then new Pt1(end.x,prev.y,'v')
             when 'v' then new Pt1(prev.x,end.y,'h')
             else Assert.error("dir must be one of 'h' or 'v'")
-        @usedPoints = @usedPoints.concat(@getLine(prev,pt))
+        @usedPoints = @usedPoints.concat(@getLine(prev,pt)).concat(@getLine(pt,end))
         @solutionPoints.push(pt)
         pt
     pickPoint: (prev) =>
@@ -175,7 +157,6 @@ class Color
                 newY = Rand.intExclude(@parent.size-1,excluded)
                 new Pt1(prev.x,newY,'h')
             else Assert.error("dir must be one of 'h' or 'v'")
-        line = @getLine(prev,pt)
         Assert.true(prev.x isnt pt.x or prev.y isnt pt.y,
                     "points may not overlap (#{pt.x},#{pt.y})")
         @usedPoints = @usedPoints.concat(@getLine(prev,pt))
@@ -195,14 +176,47 @@ class Puzzle
         #@green = new Color('green',this)
         #@blue  = new Color('blue' ,this)
         @red.make(@count)
+        @static = []
+        @makeStatic()
+
+
+    randomPoint: -> [Rand.int(@size-1),Rand.int(@size-1)]
+    randomUnblockedPoints: (count) ->
+        # TODO: make this support multiple colors
+        blockedStrs = ((b+'') for b in @red.usedPoints)
+        points = []
+        while points.length < count
+            point = @randomPoint()
+            if (point+'') not in blockedStrs
+                points.push(point)
+                blockedStrs.push(point+'')
+        points
+    makeStatic: (count=20) ->
+        for [x,y] in @randomUnblockedPoints(count)
+            if Rand.int(2) is 0
+                mirror = new Mirror(x,y)
+                mirror.orientation = ['ne','nw','sw','se'][Rand.int(3)]
+                @static.push(mirror)
+            else
+                @static.push(new Block(x,y))
+        for mirror in @red.mirrors
+            if Rand.int(3) is 0 then @static.push(mirror)
+                
+
     # maybe TODO: print out things that aren't from the red part
     printAscii: ->
         board = (('.' for i in [0...(@size+2)]) for j in [0...(@size+2)])
-        for mirror in @red.mirrors
-            board[mirror.x+1][mirror.y+1] = switch mirror.orientation
-                when 'ne','sw' then '\\'
-                when 'nw','se' then '/'
-                else Assert.error("orientation must be one of ne,sw,nw,se (is #{mirror.orientation})")
+        #for [x,y] in @red.usedPoints
+        #    board[x+1][y+1] = '!'
+        #for mirror in @red.mirrors
+        #    board[mirror.x+1][mirror.y+1] = switch mirror.orientation
+        #        when 'nw','se' then '/'
+        #        when 'ne','sw' then '\\'
+        #        else Assert.error("orientation must be one of ne,sw,nw,se (is #{mirror.orientation})")
+        for static in @static
+            space = board[static.x+1][static.y+1]
+            if space isnt '.' then Assert.error("static elements shouldn't cover things (#{space}) up!")
+            board[static.x+1][static.y+1] = static.toString()
         s = @red.start
         e = @red.ends[0]
         board[s.x+1][s.y+1] = 's'
@@ -213,116 +227,5 @@ class Puzzle
 p = new Puzzle()
 p.printAscii()
 
-randomPoint = (size) ->
-    [randInt(size-1),randInt(size-1)]
-
-pickRandomPoints = (size,blocked,number=10) ->
-    blockedStrs = ((b+'') for b in blocked)
-    points = []
-    while points.length < number
-        point = randomPoint(size)
-        if (point+'') not in blockedStrs then points.push(point)
-    points
-
-
-class M
-    constructor = (@x,@y,@orientation) -> @type = M
-
-class B
-    constructor = (@x,@y) -> @type = B
-
-genBoard = (n=4,size=10,start=false,end=false) ->
-    [startSet,endSet] = [not not start,not not end]
-    done = false
-    until done
-        try
-            board = [["_" for i in [0...10]] for j in [0...10]]
-            start ||= selectEdgePoint(size,exclude=end)
-            end ||= selectEdgePoint(size,[start[0],start[1]])
-            [points,blocked] = pickPoints(start,end,size,n)
-            mirrors = assignDirections(start,end,points)
-            done = true
-        catch e
-            start = false if not startSet
-            end = false if not endSet
-    blocks = pickRandomPoints(size,blocked,number=30)
-    includedMirrorIdxs = uniqueRandInts(rantInt(2))
-    includedMirrors = M(x,y,d) for [x,y,d],i in mirrors when i in includedMirrorIdxs
-    mirrors = M(x,y,d) for [x,y,d],i in mirrors when i not in includedMirrorIdxs
-    newMirrorIdxs = uniqueRandInts(randInt(5))
-    permanent = for [x,y],i in blocks
-        if i in newMirrorIdxs
-            M(x,y,['ne','nw','se','sw'][randInt(3)])
-        else
-            B(x,y)
-    permanent = permanent.concat(includedMirrors)
-    [start,mirrors,permanent,end]
-
-class AsciiBoard
-    constructor: (size) ->
-        @board = (('.' for i in [0...(size+2)]) for j in [0...(size+2)])
-    set: (x,y,c) ->
-        try
-            @board[x+1][y+1] = c
-        catch e
-            console.log(x + " " + y + " " + c)
-            throw e
-    addMirror: (x,y,d) ->
-        switch d
-            when 'ne' then @set(x,y,'\\')
-            when 'sw' then @set(x,y,'\\')
-            when 'nw' then @set(x,y,'/')
-            when 'se' then @set(x,y,'/')
-            else throw "direction should be one of ne,nw,se,sw"
-    addBlock:  (x,y) -> @set(x,y,'#')
-    setStart:  ([x,y,d]) -> @set(x,y,'s')
-    setEnd:    ([x,y,d]) -> @set(x,y,'e')
-    print: ->
-        for i in [0...@board.length]
-            console.log(@board[i].join(' '))
-    addMirrors: (mirrorList) ->
-        for [x,y,d] in mirrorList
-            @addMirror(x,y,d)
-
-drawBoard = () ->
-    size = 10
-    [start,generated,blocked,end] = genBoard(n=4,size=size)
-    try
-        ab = new AsciiBoard(size)
-        for [x,y] in blocked
-            ab.addBlock(x,y)
-        ab.addMirrors(generated)
-        ab.setStart(start)
-        ab.setEnd(end)
-        ab.print()
-    catch e
-        console.log(start)
-        console.log(end)
-        console.log(generated)
-        console.log(blocked)
-
-makeBoard = () ->
-    size = 10
-    b = new Board(size)
-    done = false
-    [[sX,sY,sD],mirrors,permanent,[eX,eY,eD]] = genBoard(n=4,size=size)
-    mirrors2 = []
-    orientmap = {nw:1 ,ne:2 ,se:3, sw:4}
-    for m in mirrors
-        mirror = new Mirror([m.x,m.y],orientmap[m.orientation],false)
-        mirrors2.push(mirror)
-    for b in permanent 
-        if b.type is B
-            elem = new Block([b.x,b.y])
-        else
-            elem = new Mirror([b.x,b.y],orientmap[b.orientation])
-        b.add(elem)
-    d = if sD is 'h' then (if sY is -1 then 'left' else 'right') else (if sX is -1 then 'down' else 'up')
-    b.add(new Startpoint([sX,sY]),d)
-    d = if eD is 'h' then (if eY is -1 then 'left' else 'right') else (if eX is -1 then 'down' else 'up')
-    b.add(new Endpoint([eX,eY]),d)
-    [b,mirrors2]
-
 exports ?= {}
-exports.Rand = Rand
 

@@ -26,17 +26,54 @@ everyone = nowjs.initialize(server) #, {socketio: {'log level': 1}})
 
 idMap = {}
 plots = {}
+lastPlot = [0,0] #get from database
+usedPlots = {}
+
+isPlotAssigned = (x,y)->
+  usedPlots[x+","+y]
+
+assignPlot = (x,y, u)->
+  usedPlots[x+","+y] = u.clientId #get from database
 
 userPlot = (u, assign = false) ->
+  if assign
+    assignPlot assign.gridX, assign.gridY, u
   plots[idMap[u.clientId]] = assign if assign
   plots[idMap[u.clientId]]
 
-everyone.now.addUser = (user, callback)->
-  DB.users.addUser user, callback
+
+
+getNewPlot = ->
+  plot = lastPlot
+  while lastPlot == plot
+    direction = Math.floor(Math.random()*4)+1
+    [x,y] = plot
+    switch direction
+      when Constants.LaserDirection.N
+        y= y+1
+      when Constants.LaserDirection.S
+        y= y-1
+      when Constants.LaserDirection.W
+        x= x+1
+      when Constants.LaserDirection.E 
+        x = x-1
+    if not isPlotAssigned x,y
+      lastPlot = [x,y]
+      break
+    else
+      nextDir = Math.floor(Math.random()*4+1)
+      plot = [x+nextDir, y+nextDir]
+  lastPlot
+
 
 everyone.now.requestPlot = (difficulty) ->
-  [x,y] = [1,0]
+  [x,y] = getNewPlot()
+  console.log x, y
   puzzle = new Puzzle(10)
+  idMap[@user.clientId] = {
+    clientId:   @user.clientId,
+    difficulty: difficulty
+  }
   gm = new GameManager puzzle, x ,y
   everyone.now.startPlot([x, y], puzzle, @user.clientId)
   userPlot @user, gm
