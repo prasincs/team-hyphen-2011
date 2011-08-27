@@ -7,7 +7,6 @@ $ ->
   UI.addPlot new GameManager(new Puzzle(), 0, 1)
   UI.addPlot new GameManager(new Puzzle(), 0, 2)
   UI.addPlot new GameManager(new Puzzle(), 0, 3)
-
   
   UI.draw()
   

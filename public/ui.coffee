@@ -15,8 +15,6 @@ class Plot
     @bp.fillStyle = '#999999'
     @bp.fillRect 0, 0, @size, @size
     
-    console.log "Drawing tiles for", @front
-    
     @bp.fillStyle = '#cccccc'
     for x in [0..10]
       for y in [x%2..10] by 2
@@ -29,6 +27,23 @@ class Plot
       for y in [0..9]
         if e = @manager.getEntityAt(x, y)
           @[e.constructor.name.toLowerCase()](e)
+    for laser in @manager.board.lasers
+      @laser laser
+        
+  laser : (e) ->
+    console.log e
+    @pen.beginPath()
+    @pen.strokeStyle = e.color
+    for segment in e.segments
+      console.log segment
+      [sx, sy] = segment.start.position
+      [ex, ey] = segment.end.position
+      console.log "Line", [sx, sy], [ex, ey]
+      @pen.moveTo((sx+0.5)*@scale, (sy+0.5)*@scale)
+      @pen.lineTo((ex+0.5)*@scale, (ey+0.5)*@scale)
+    @pen.closePath()
+    @pen.stroke()
+    
 
   block : (e) ->
     [x,y] = e.position
@@ -115,6 +130,7 @@ UI =
     for plotRow in @plots
       for plot in plotRow
         plot.drawTiles()
+        plot.drawEntities()
   
   
   reposition : (origin = false) ->
