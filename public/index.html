@@ -80,20 +80,19 @@
                 background: #ffff00;
                 cursor: pointer;
             }
+            
+            #palate li span {
+                margin: 0 0 0 5px;
+            }
+            #palate li span::before { content: "(" }
+            #palate li span::after  { content: ")" }
         </style>
       </head>
-      <script type="text/javascript">
-        now.ready(function(){
-                  /*now.addUser({username:"test"}, function(){
-                              console.log("user added");
-                              });*/
-        });
-      </script>
     <body>
         <ol id="palate">
-            <li data-tool="Mirror">Mirror</li>
-            <li data-tool="Prism">Prism</li>
-            <li data-tool="Filter">Filter</li>
+            <li data-tool="Mirror">Mirror<span></span></li>
+            <li data-tool="Prism">Prism<span></span></li>
+            <li data-tool="Filter">Filter<span></span></li>
         </ol>
         <div id="wrapper">
             <div id="map">

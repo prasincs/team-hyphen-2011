@@ -1,3 +1,5 @@
+now = window.now
+
 class Plot
   
   constructor : (@manager, @front, @mid, @back) ->
@@ -111,10 +113,19 @@ class Plot
     if entity = @manager.getEntityAt(x, y)
       if e.which == 3 # right click
         @manager.removeEntityAt(x, y)
+        now.entityRemoved e
       else
         @manager.rotateEntityClockwise(x, y)
+        now.entityAdded entity
     else if UI.tool
-      @manager.addEntity(new (window[UI.tool])([x,y], 1, true))
+      e = new (window[UI.tool])([x,y], 1, true)
+      @manager.addEntity e
+      now.entityAdded e
+      
+    $("#palate li").each (e) =>
+      e.find("span").text(@manager.remainingEntities(Constants.EntityType[e.data("tool").toUpperCase()]))
+      
+      
     @drawEntities()
     @clearLast()
     
@@ -131,21 +142,7 @@ UI =
     for row in @plots when row
       for plot in row when plot
         plot.drawTiles()
-        plot.drawEntities()
-  
-  
-  reposition : (origin = false) ->
-    [x, y] = @topLeft    
-    bodyW = $("body").width()
-    bodyH = $("body").height()
-    
-    x = Math.min(Math.max(x, 0), @worldDims[0] - bodyW)
-    y = Math.min(Math.max(y, 0), @worldDims[1] - bodyH) 
-    
-    for prefix in ['', '-o-', '-moz-', '-webkit-', '-ms-']
-      @container.css "#{prefix}transform-origin", origin if origin
-      @container.css "#{prefix}transform", "scale(#{@zoomLevel}) translate(#{x}px, #{y}px)"
-  
+        plot.drawEntities()  
   
   installHandlers : ->
       
