@@ -5,23 +5,29 @@
         <title>We need a title</title>
         <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js" type="text/javascript" charset="utf-8"></script>
         <!-- script src="/nowjs/now.js" type="text/javascript" charset="utf-8"></script -->
+        <script src="jquery.mousewheel.js" type="text/javascript" charset="utf-8"></script>
         <script src="common.js" type="text/javascript" charset="utf-8"></script>
         <script src="game.js" type="text/javascript" charset="utf-8"></script>
         <script src="ui.js" type="text/javascript" charset="utf-8"></script>
         <script src="controller.js" type="text/javascript" charset="utf-8"></script>
     
-        <style>   
+        <style>  
+        
+            html, body {height: 100%}
         
             body {
                 margin: 0;
                 padding: 0;
+                font-family: "courier new";
+                font-size: 18px;
+                background: #afafaf;                
             }
-        
-            #map {
+            
+            #map, #wrapper {
                 width: 100%;
                 height: 100%;
                 margin: 0; padding: 0;
-                /* overflow: ; */
+                overflow: hidden;
             }
         
             .fg, .mg, .bg {
@@ -46,11 +52,19 @@
                 list-style-type: none;
                 margin: 0; padding: 0;
                 position: absolute;
-                right: 0; top: 250px;
+                right: 0; top: 200px;
+                z-index: 1000;
             }
             
-            #controls li {
-                margin: 0; padding: 0;
+            #palate li {
+                font-size: 32px;
+                margin: 0 0.5em 1em 0 ; padding: 0;
+                text-align: right;
+            }
+            
+            #palate li:hover {
+                background: #ffff00;
+                cursor: pointer;
             }
         </style>
     </head>
@@ -60,6 +74,7 @@
             <li data-tool="Prism">Prism</li>
             <li data-tool="Filter">Filter</li>
         </ol>
+        <div id="wrapper">
         <div id="map">
          
             <!-- We'll dynamically resize this. -->
@@ -68,6 +83,7 @@
                 <canvas class="mg" width="500" height="500"></canvas>
                 <canvas class="fg" width="500" height="500"></canvas>
             </div>
+        </div>
         </div>
     </body>
 </html>
