@@ -79,8 +79,8 @@ class Plot
   coordsToSquare : (e) ->
     offset = $(@front).offset()
     
-    [Math.floor((e.pageX - offset.left)/@scale/UI.zoomLevel),
-     Math.floor((e.pageY - offset.top)/@scale/UI.zoomLevel)]
+    [Math.floor((e.pageX - offset.left)/@scale),
+     Math.floor((e.pageY - offset.top)/@scale)]
 
   clearLast : () ->
     if @lastMouseMove
@@ -170,9 +170,9 @@ UI =
 
     $(document).mousewheel (e, delta) =>
       if delta > 0
-        @zoomLevel *= 1.2
+        @zoomLevel *= 1.15
       else
-        @zoomLevel /= 1.2
+        @zoomLevel /= 1.15
       
       @zoomLevel = Math.max(0.1, Math.min(1, @zoomLevel))
       
