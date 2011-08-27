@@ -4,7 +4,7 @@ class GameManager
         @changed = []
         @numEntitiesByType = {}
         
-        (@numEntitiesByType[k] = 0) for k in Constants.EntityType
+        (@numEntitiesByType[Constants.EntityType[k]] = 0) for k of Constants.EntityType
 
     addEntity: (entity) ->
         succeeded = false
@@ -37,10 +37,10 @@ class GameManager
         @board.setAt(x, y, {})
     
     incrementEntityType: (type) ->
-        @numEntitiesByType[entity.type] += 1
+        @numEntitiesByType[type] += 1
 
     decrementEntityType: (type) ->
-        @numEntitiesByType[entity.type] -= 1
+        @numEntitiesByType[type] -= 1
     
     rotateEntityClockwise: (x, y) ->
         @getEntityAt(x, y).rotateClockwise()
@@ -61,6 +61,15 @@ class GameManager
         # For now, just take the win condition to be 'all lasers reaching an end state through valid moves'
         finalResult = true
         finalResult = (finalResult &= result for result in results)
+    
+    validateSegment: (segment) ->
+        if(segment.start.position[0] is segment.end.position[0])
+            col = @board[segment.start.position[0]]
+            blockers = [elem for elem in col when (not elem.accept(segment.laser) or elemn.type is Constants.EntityType.MIRROR)]
+            return not blockers.length
+
+        else if(segment.start.position[1] is segment.end.position[1])
+            return false
 
     walkLaser: (laser) ->
         start = laser.chain[0]
@@ -134,7 +143,7 @@ class Board
             return true
 
     setAt: (x, y, obj) ->
-        if x < @size and y @size 
+        if x < @size and y < @size 
             @grid[y][x] = obj
             return true
 
@@ -145,7 +154,7 @@ class Puzzle
     constructor: () ->
 
     getMaxForType: (entityType) ->
-
+        return 100000
 
 class GridEntity
     constructor: (@position, @orientation, @mobility) ->
@@ -199,11 +208,18 @@ class Prism extends GridEntity
 class Laser
     constructor: (@color) ->
         @chain = []
+        @segments = []
 
     extend: (entity) ->
         if(entity.accepts this)
+            segment = new LaserSegment(@segments[@segments.length - 1].start, entity, this)
+            @segments.push(segment)
             @chain.push(entity)
 
     truncate: () ->
         @chain.pop()
-        
+        @segments.pop()
+
+class LaserSegment
+    constructor: (@start, @end, @laser) ->
+
