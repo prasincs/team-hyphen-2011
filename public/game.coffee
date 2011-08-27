@@ -43,14 +43,16 @@ class GameManager
         
         if laser.segments.length 
             startPoint = laser.segments[laser.segments.length-1].start
+            currDir = (laser.segments[laser.segments.length-2].direction-1) % 4
+
         else
             startPoint = laser.startpoint
+            currDir = startPoint.direction
 
         dy = 0
         dx = 0
         x = startPoint.position[0]
         y = startPoint.position[1]
-        currDir = startPoint.direction
         branches = []
         
         unless laser.segments.length
@@ -109,12 +111,12 @@ class GameManager
                     when Constants.EntityType.PRISM
                         # ugh
                         directions = current.splitDirection(currDir)
-                        currDir = directions[1]
+                        currDir = directions.right
 
                         branched = new Laser(laser.color, laser.startpoint)
                         branched.segments = laser.segments.slice(0)
                         branched.chain = laser.chain.slice(0)
-                        branched.segments.push(new LaserSegment(current, null, laser, directions[0]))
+                        branched.segments.push(new LaserSegment(current, null, laser, directions.left))
 
                         # Store the temporary laser and the grid coord at which the split happened
                         # so we can merge.
@@ -135,7 +137,7 @@ class GameManager
         removeEntityAt(entity.position[0], entity.position[1])
 
     getEntityAt: (x, y) ->
-        result = @board.getAt(x, y)
+        @board.getAt(x, y)
 
     addLaser: (laser) ->
         @board.lasers.push(laser)
@@ -180,7 +182,6 @@ class GameManager
         
         results = (@validateLaser(laser) for laser in @board.lasers)
 
-        # For now, just take the win condition to be 'all lasers reaching an end state through valid moves'
         finalResult = true
         (finalResult &= e.satisfied for e in @board.endPoints)
 
@@ -188,7 +189,7 @@ class GameManager
     
     validateSegment: (segment) ->
         unless segment.end
-            return false
+            return true
 
         if(segment.start.position[0] is segment.end.position[0])
             # Check if any of the entities between the start / end on this row are blockers.
@@ -209,13 +210,15 @@ class GameManager
 
     validateLaser: (laser) ->
         results = (@validateSegment(seg) for seg in laser.segments)
+        
+        
         ret = true
         (ret &= result for result in results)
 
         hitsEnd = (seg.end for seg in laser.segments when seg.end and seg.end.type is Constants.EntityType.END)
         if not hitsEnd.length
            return false
-        else 
+        else
 
             # Flag the end point as satisfied if this laser is valid and the last entity on the laser
             # is an end point.
@@ -361,13 +364,13 @@ class Laser
     merge: (laserPackets) ->
 
         # Merge each laser packet (laser itself and its divergence point)
-        mergeSingle(packet[0], packet[1]) for packet in laserPackets
+        @mergeSingle(packet[0], packet[1]) for packet in laserPackets
 
     mergeSingle: (laser, split) ->
         
         # Find the point at which this laser deviates and grab every segment after that 
-        toMerge = (laser.segments[laser.segments.indexof(k)-1..laser.segments.length] for k in laser.segments when k.position[0] is split[0] and k.position[1] is split[1])
-        @segments.push(toMerge)
+        toMerge = ((laser.segments[laser.segments.indexOf(k)..laser.segments.length])[0] for k in laser.segments when k.start.position[0] is split[0] and k.start.position[1] is split[1])
+        (@segments.push(seg) for seg in toMerge)
 
 class LaserSegment
     constructor: (@start, @end, @laser, @direction) ->
