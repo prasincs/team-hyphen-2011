@@ -19,10 +19,50 @@ class GameManager
                    @incrementEntityType(entity.type)
                    @addToChanged(entity.position)
 
+        #@updateLasers(entity)
         return succeeded
     
     removeEntity: (entity) ->
         removeEntityAt(entity.position[0], entity.position[1])
+
+    updateLasers: (entity) ->
+        # Ensure the laser segments are still correct given the new entity
+        correctLaser(laser, entity) for laser in board.lasers when not validateLaser(laser)
+
+    correctLaser: (laser, entity) ->
+        # If a laser has segments that are no longer valid given the current entity,
+        # correct it based on the laser type. (filter vs block vs mirror...)
+
+        i = 0
+        currentSegment = laser.segments[i]
+        while(currentSegment)
+            if @isBetween(currentSegment, entity)
+                toEntity = new LaserSegment(start, entity, laser)
+                fromEntity = (switch entity.type
+                                  when Constants.EntityType.BLOCK
+                                      # remove all laser segments forward
+                                      null
+                                  when Constants.EntityType.MIRROR
+                                      # Bounce laser
+                                      null
+                                  when Constants.EntityType.PRISM
+                                      # Split laser at 90 degree angles
+                                      null
+                                  when Constants.EntityType.FILTER
+                                      # Block if the color of the laser is not equal to that of the filter
+                                      null
+                                  else
+                                      # Do nothing
+                                      null)
+            i += 1
+    isBetween: (segment, entity) ->
+        startPos = segment.start.position
+        endPos = segment.end.position
+
+        if startPos[0] is endPos[0]
+            entity in (@board.grid[startPos[0]][startPos[1]+1..endPos[1]-1])
+        else if startPos[1] is endPos[1]
+            entity in ((@board.grid[startPos[1]][k] for k in [0...@board.size])[startPos[0]+1..endPos[0]-1])
 
     getEntityAt: (x, y) ->
         result = @board.getAt(x, y)
@@ -61,7 +101,7 @@ class GameManager
         #   - Ends at a valid end point
         #   - Every entity in between accepts it.
         
-        results = [walkLaser(laser) for laser in @board.lasers]
+        results = [validateLaser(laser) for laser in @board.lasers]
 
         # For now, just take the win condition to be 'all lasers reaching an end state through valid moves'
         finalResult = true
@@ -86,7 +126,10 @@ class GameManager
             
             return not blockers.length
 
-    walkLaser: (laser) ->
+    validateLaser: (laser) ->
+        results = [@validateSegment(seg) for seg in laser.segments]
+        ret = true
+        ret = (ret &= result for result in results)
 """[
         start = laser.chain[0]
         end = laser.chain[laser.chain.length - 1]
