@@ -102,12 +102,16 @@ assignDirections = (start,end,points) ->
     mirrors
 
 genBoard = (n=2,size=10) ->
-    board = [["_" for i in [0...10]] for j in [0...10]]
-    startPoint = [-1,5,'h']
-    endPoint = [10,2,'h']
-    [points,blocked] = pickPoints(startPoint,endPoint,size,n)
-    mirrors = assignDirections(startPoint,endPoint,points)
-    blocks = pickRandomPoints(size,blocked,number=30)
+    done = false
+    until done
+        try
+            board = [["_" for i in [0...10]] for j in [0...10]]
+            startPoint = [-1,5,'h']
+            endPoint = [10,2,'h']
+            [points,blocked] = pickPoints(startPoint,endPoint,size,n)
+            mirrors = assignDirections(startPoint,endPoint,points)
+            blocks = pickRandomPoints(size,blocked,number=30)
+            done = true
     [startPoint,mirrors,blocks,endPoint]
 
 class AsciiBoard
@@ -130,11 +134,9 @@ class AsciiBoard
     setStart:  ([x,y,d]) -> @set(x,y,'s')
     setEnd:    ([x,y,d]) -> @set(x,y,'e')
     print: ->
-        console.log("printing:\n")
         for i in [0...@board.length]
             console.log(@board[i].join(' '))
     addMirrors: (mirrorList) ->
-        console.log(mirrorList.length)
         for [x,y,d] in mirrorList
             @addMirror(x,y,d)
 
@@ -159,6 +161,7 @@ drawBoard = () ->
 makeBoard = () ->
     size = 10
     b = new Board(size)
+    done = false
     [[sX,sY,sD],mirrors,blocks,[eX,eY,eD]] = genBoard(n=4,size=size)
     for [x,y,d] in mirrors
         orientmap = {nw:1 ,ne:2 ,se:3, sw:4}
@@ -167,9 +170,9 @@ makeBoard = () ->
     for [x,y] in blocks
         block = new Block([x,y])
         b.add(block)
-    d = if sD is 'h' then if sY is -1 then 'left' else 'right' else if sX is -1 then 'down' else 'up'
+    d = if sD is 'h' then (if sY is -1 then 'left' else 'right') else (if sX is -1 then 'down' else 'up')
     b.add(new Startpoint([sX,sY]),d)
-    d = if eD is 'h' then if eY is -1 then 'left' else 'right' else if eX is -1 then 'down' else 'up'
+    d = if eD is 'h' then (if eY is -1 then 'left' else 'right') else (if eX is -1 then 'down' else 'up')
     b.add(new Endpoint([eX,eY]),d)
     b
 
