@@ -6,13 +6,18 @@
         <meta itemprop="description" content="Description">
         <title>We need a title</title>
         <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/jquery-ui.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="jquery.ui.infiDrag.js" type="text/javascript"></script>
+        
         <script src="nowjs/now.js" type="text/javascript" charset="utf-8"></script>
-        <script src="dragdealer.js" type="text/javascript" charset="utf-8"></script>
+        <script src="jquery-ui-1.8.16.custom.min.js" type="text/javascript" charset="utf-8"></script>
         <script src="jquery.mousewheel.js" type="text/javascript" charset="utf-8"></script>
         <script src="common.js" type="text/javascript" charset="utf-8"></script>
         <script src="game.js" type="text/javascript" charset="utf-8"></script>
         <script src="ui.js" type="text/javascript" charset="utf-8"></script>
         <script src="controller.js" type="text/javascript" charset="utf-8"></script>
+        <link href='http://fonts.googleapis.com/css?family=Aldrich' rel='stylesheet' type='text/css'>
+        
         <script src="http://platform.twitter.com/widgets.js" type="text/javascript"></script>
         <script type="text/javascript">
           (function() {
@@ -23,15 +28,14 @@
         </script>
         <style>  
         
-            html, body {height: 100%; cursor: pointer !important;}
+            html, body {height: 100%;}
         
             body {
                 margin: 0;
                 padding: 0;
-                font-family: "courier new";
-                font-size: 18px;
-                background: #afafaf;  
-                cursor: pointer !important;
+                font-family: "Aldrich", "Helvetica";
+                font-size: 16px;
+                background: #fff;  
                 overflow: hidden;
             }
             
@@ -40,13 +44,7 @@
                 height: 100%;
                 margin: 0; padding: 0;
                 overflow: hidden;
-                cursor: pointer !important;
                 position: absolute;
-            }
-            
-            .handle {
-                position: absolute;
-                cursor: pointer;
             }
         
             .fg, .mg, .bg {
@@ -74,12 +72,19 @@
             
             header {
                 position: absolute;
-                right: 0; top: 50px;
+                right: 0; top: 0;
+                height: 100%;
                 z-index: 1000;
-                margin: 0; padding: 0;
-                background: rgba(175,175,175,0.75);
+                margin: 0; padding: 2em;
+                background: rgba(255,255,255,0.8);
+                text-align: right;
                 
             }
+            
+                #menu li {
+                    list-style-type: none;
+                    padding: 0; margin: 0;
+                }
             
             #palate {
                 list-style-type: none;
@@ -87,7 +92,7 @@
             }
             
             #palate li {
-                font-size: 32px;
+                font-size: 24px;
                 margin: 0 0.5em 1em 0 ; padding: 0;
                 text-align: right;
             }
@@ -105,23 +110,39 @@
             #palate li.selected {
               background: #00ffaa;
             }
+            
+            #tl {
+
+            }
+            
+            #start-panel {
+                position: absolute;
+                width: 300px;
+                top: 100px;
+                left: 100px;
+                background: #fff;
+                border: 10px solid #000;
+                z-index: 500;
+            }
+            ._tile { background: transparent; }
         </style>
       </head>
     <body>
         <header>
             <span id="sprintTimer"></span><span id="sprintText"></span>
-            <h1>scoreboard</h1>
+            <a href="#" id="give-up">I give up!</a>
+            
+            <h1>Scoreboard</h1>
             ...
-            <h1>controls</h1>
+            <h1>Spread the Joy</h1>
             <menu id="menu">
-                <li><a href="#">stuff</a></li>
                 <li><a href="http://twitter.com/share"
                        class="twitter-share-button"
                        data-text="Name: tagline.">Tweet</a></li>
                 <li><g:plusone size="medium"></g:plusone></li>
                 <li><div id="fb-root"></div><script src="http://connect.facebook.net/en_US/all.js#xfbml=1"></script><fb:like href="" send="false" layout="button_count" show_faces="false" font=""></fb:like></li>
             </menu>
-            <h1>palate</h1>
+            <h1>Palette</h1>
             <menu id="palate">
                 <li data-tool="Mirror"><a href="#">Mirror</a><span></span></li>
                 <li data-tool="Prism"><a href="#">Prism</a><span></span></li>
@@ -130,7 +151,19 @@
         </header>
         <div id="wrapper">
             <div id="map">
+                <div id="tl"></div>
             </div>
         </div>
+        <div id="start-panel">
+            <menu id="difficulty-menu">
+                <li><a href="#" data-difficulty="easy">Easy</a></li>
+                <li><a href="#" data-difficulty="hard">Hard</a></li>
+            </menu>
+            <div id="instructions">
+                <h2>Instructions</h2>
+                Guide the laser to its output. Use the mirrors, prisms, and filters given
+                on the right. Right click a mirror to delete, click to rotate.
+            <div>
+        <div>
     </body>
 </html>
