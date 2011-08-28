@@ -1,0 +1,94 @@
+ul,menu { list-style-type: none; }
+
+html, body {height: 100%;}
+body {
+    margin: 0;
+    padding: 0;
+    font-family: "Aldrich", "Helvetica";
+    font-size: 16px;
+    background: #fff;  
+    overflow: hidden;
+}
+
+.fg, .mg, .bg {
+    background : transparent;
+    position   : absolute;
+    top        : 0;
+    left       : 0;
+    cursor: pointer !important;
+    
+}
+.fg { z-index: 12; }
+.local .fg {background: rgba(100,255,100,0.1);}
+.local .fg:hover {background: transparent;}
+.mg { z-index: 11; }
+.bg { z-index: 10; }
+
+.plot {
+    width: 500px;
+    height: 500px;
+    margin: 0; padding: 0; border: none;
+    position: absolute;
+}
+
+header {
+    position: absolute;
+    right: 0; top: 0;
+    height: 100%;
+    z-index: 1000;
+    margin: 0; padding: 20px;
+    background: #ccc;
+    text-align: right;
+    width: 210px;
+}
+    #menu li {
+        list-style-type: none;
+        padding: 0; margin: 0;
+    }
+    #palate {
+        list-style-type: none;
+        margin: 0; padding: 0;
+    }
+        #palate li {
+            font-size: 24px;
+            margin: 0 10px 15px 0 ; padding: 0;
+            text-align: right;
+        }
+        #palate li.selected {
+          background: #00ffaa;
+        }
+            #palate li:hover {
+                background: #ffff00;
+                cursor: pointer;
+            }
+            #palate li span {
+                margin: 0 0 0 5px;
+            }
+                #palate li span::before { content: "(" }
+                #palate li span::after  { content: ")" }
+
+#wrapper {
+    width: 100%;
+    height: 100%;
+    margin: 0; padding: 0;
+    overflow: hidden;
+    position: absolute;
+}
+    #tl {
+    }
+
+#start-panel {
+    position: absolute;
+    left: 0; right: 250px; top: 0;
+    background: #fff;
+    z-index: 5000;
+    padding: 20px;
+    border: 10px solid black;
+}
+    #start-panel > div {
+    }
+canvas {
+    border: 10px solid blue;
+}
+    
+._tile { background: transparent; border: 1px solid #000 }

@@ -5,6 +5,7 @@
         <meta itemprop="name" content="Game: tagline">
         <meta itemprop="description" content="Description">
         <title>We need a title</title>
+        <link rel="stylesheet" href="index.css" type="text/css" media="screen" />
         <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js" type="text/javascript" charset="utf-8"></script>
         <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/jquery-ui.min.js" type="text/javascript" charset="utf-8"></script>
         <script src="jquery.ui.infiDrag.js" type="text/javascript"></script>
@@ -26,106 +27,6 @@
             var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
           })();
         </script>
-        <style>  
-        
-            html, body {height: 100%;}
-        
-            body {
-                margin: 0;
-                padding: 0;
-                font-family: "Aldrich", "Helvetica";
-                font-size: 16px;
-                background: #fff;  
-                overflow: hidden;
-            }
-            
-            #wrapper {
-                width: 100%;
-                height: 100%;
-                margin: 0; padding: 0;
-                overflow: hidden;
-                position: absolute;
-            }
-        
-            .fg, .mg, .bg {
-                background : transparent;
-                position   : absolute;
-                top        : 0;
-                left       : 0;
-                cursor: pointer !important;
-                
-            }
-        
-            .fg { z-index: 12; }
-            .local .fg {background: rgba(100,255,100,0.1);}
-            .local .fg:hover {background: transparent;}
-                        
-            .mg { z-index: 11; }
-            .bg { z-index: 10; }
-        
-            .plot {
-                width: 500px;
-                height: 500px;
-                margin: 0; padding: 0; border: none;
-                position: absolute;
-            }
-            
-            header {
-                position: absolute;
-                right: 0; top: 0;
-                height: 100%;
-                z-index: 1000;
-                margin: 0; padding: 2em;
-                background: rgba(255,255,255,0.8);
-                text-align: right;
-                
-            }
-            
-                #menu li {
-                    list-style-type: none;
-                    padding: 0; margin: 0;
-                }
-            
-            #palate {
-                list-style-type: none;
-                margin: 0; padding: 0;
-            }
-            
-            #palate li {
-                font-size: 24px;
-                margin: 0 0.5em 1em 0 ; padding: 0;
-                text-align: right;
-            }
-            
-            #palate li:hover {
-                background: #ffff00;
-                cursor: pointer;
-            }
-            
-            #palate li span {
-                margin: 0 0 0 5px;
-            }
-            #palate li span::before { content: "(" }
-            #palate li span::after  { content: ")" }
-            #palate li.selected {
-              background: #00ffaa;
-            }
-            
-            #tl {
-
-            }
-            
-            #start-panel {
-                position: absolute;
-                width: 300px;
-                top: 100px;
-                left: 100px;
-                background: #fff;
-                border: 10px solid #000;
-                z-index: 500;
-            }
-            ._tile { background: transparent; border: 1px solid #000 }
-        </style>
       </head>
     <body>
         <header>
@@ -155,15 +56,15 @@
             </div>
         </div>
         <div id="start-panel">
+            <div id="instructions">
+                <h2>Welcome to Lasers!</h2>
+                Guide the laser to its output. Use the mirrors, prisms, and filters given
+                on the right. Right click a mirror to delete, click to rotate.
+            <div>
             <menu id="difficulty-menu">
                 <li><a href="#" data-difficulty="easy">Easy</a></li>
                 <li><a href="#" data-difficulty="hard">Hard</a></li>
             </menu>
-            <div id="instructions">
-                <h2>Instructions</h2>
-                Guide the laser to its output. Use the mirrors, prisms, and filters given
-                on the right. Right click a mirror to delete, click to rotate.
-            <div>
         <div>
     </body>
 </html>
