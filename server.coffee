@@ -44,16 +44,16 @@ plotNeighbors = (x,y)->
   neighbors = {}
   count = 0
   if isPlotAssigned(x-1, y)
-    neighbors["E"]= [x-1,y]
+    neighbors["e"]= [x-1,y]
     count +=1
   if isPlotAssigned(x+1, y)
-    neighbors["W"] = [x+1, y]
+    neighbors["w"] = [x+1, y]
     count +=1
   if isPlotAssigned(x, y-1)
-    neighbors["N"] = [x, y-1]
+    neighbors["n"] = [x, y-1]
     count +=1
   if isPlotAssigned(x, y+1)
-    neighbors["S"] = [x, y+1]
+    neighbors["s"] = [x, y+1]
     count +=1
   neighbors.count = count
   neighbors
@@ -93,13 +93,13 @@ getEmptyNeighborCoord = (id)->
   [x,y] = plot.loc
   neighbors = plot.neighbors
   # could be done a bit smartly with more stuff
-  if not neighbors["E"]
+  if not neighbors["e"]
     [x-1,y]
-  else if not neighbors["W"]
+  else if not neighbors["w"]
     [x+1,y]
-  else if not neighbors["N"]
+  else if not neighbors["n"]
     [x, y-1]
-  else if not neighbors["S"]
+  else if not neighbors["s"]
     [x, y+1]
 
 userPlot = (u, assign = false) ->
@@ -118,11 +118,33 @@ getNewPlot = ->
     plot = getEmptyNeighborCoord(crowdedPlotId)
   plot
 
+# For generator
+getNeighborStartEndPoints = (x,y)->
+  points = false
+  neighbors = plotNeighbors x,y
+  delete neighbors.count
+  if neighbors != {}
+    points = []
+    for dir, coord of neighbors
+      console.log dir
+      [_x, _y] = coord
+      temp = getPlot _x, _y
+      puzzle = plots[temp.clientId].puzzle
+      console.log puzzle
+      redEdge = puzzle[1]
+      greenEdge = puzzle[2]
+      points.push [redEdge[0][0], redEdge[0][1],dir, "red"]
+      points.push [redEdge[1][0], redEdge[1][1],dir, "red"]
+      points.push [greenEdge[0][0], greenEdge[0][1], dir, "green"]
+      points.push [greenEdge[1][0], greenEdge[1][1], dir, "green"]
+  points
+
 
 
 everyone.now.requestPlot = (difficulty) ->
   [x,y] = getNewPlot()
-  puzzle = new Puzzle(10, generator.serialize())
+  puzzle = new Puzzle(10, generator.serialize(points=getNeighborStartEndPoints()))
+  #console.log puzzle
   gm = new GameManager lastPlotId, puzzle, x ,y
   everyone.now.startPlot plotId , [x, y], puzzle, @user.clientId
   assignPlot x,y, @user
