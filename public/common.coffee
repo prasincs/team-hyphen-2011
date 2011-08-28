@@ -22,6 +22,8 @@ Constants =
         START: 6
         
     RevEntityType : ['GridEntity', 'Mirror', 'Prism', 'Block', 'Filter', 'Endpoint', 'Startpoint']
+    Red: '#F00'
+    Blue: '#00F'
 
 exports ?= {}
 exports.Constants = Constants

@@ -304,6 +304,7 @@ UI =
     
     
     #testing stuff
+    """
     p.manager.addEntity(new Mirror([5,5], Constants.EntityOrient.NE))
     p.manager.addEntity(new Endpoint([5,0]))
     start = new Startpoint([0,5], Constants.LaserDirection.E)
@@ -311,6 +312,7 @@ UI =
 
     p.manager.addEntity(start)
     p.manager.addLaser(laser)
+    """
 
     p.drawTiles()
     p.drawEntities()
