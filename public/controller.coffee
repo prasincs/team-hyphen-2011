@@ -45,6 +45,7 @@ $ ->
     unimplemented
   
   now.puzzleCompleted = ->
+    window.alert("puzzle completed")
     UI.showStartDialog()
     
   now.startSprint = (timeLeft) ->

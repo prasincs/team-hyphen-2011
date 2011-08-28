@@ -135,21 +135,31 @@ everyone.now.requestNeighborPlots = (id)->
       @now.drawPlot gm.id, [gm.gridX, gm.gridY], gm.puzzle, clientId
 
 
+checkWinConditions = (obj) ->
+  if userPlot(obj.user).isSolved(1,2)
+    obj.now.puzzleCompleted()
+
 everyone.now.entityAdded = (entity)->
   console.log "entity added " + entity.type
   [x,y] = entity.position
   type = Constants.RevEntityType[entity.type]
   et = new Game[type](entity.position, entity.orientation, entity.mobility)
-  
-
   plot = userPlot @user
   everyone.now.addEntity plot.id, et
+  plot.addEntity(et)
+  checkWinConditions(this)
 
 everyone.now.entityRemoved = (x, y) ->
-  everyone.now.removeEntity userPlot(@user), x, y
+  plot = userPlot(@user)
+  everyone.now.removeEntity plot, x, y
+  plot.addEntity(et)
+  checkWinConditions(this)
   
 everyone.now.entityRotated = (x, y) ->
-  everyone.now.rotateEntity userPlot(@user), x, y
+  plot = userPlot(@user)
+  everyone.now.rotateEntity plot, x, y
+  plot.rotateEntityClockwise(x,y)
+  checkWinConditions(this)
 
 #everyone.now.validateSolution = (solution)->
 #  unimplemented
