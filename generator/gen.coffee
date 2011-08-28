@@ -298,33 +298,38 @@ getPuzzleSafe = ->
     p
 
 serialize = (puzzle=false) ->
-    puzzle ||= getPuzzleSafe()
-        
-    elems = ('.' for i in [0...puzzle.size*puzzle.size])
-    for obj in puzzle.static
-        val = switch obj.type
-            when 'mirror'
-                switch obj.orientation
-                    when 'nw','se' then '/'
-                    when 'ne','sw' then '\\'
-            when 'block' then 'b'
-            when 'filter'
-                switch obj.color
-                    when 'green'
-                        switch obj.orientation
-                            when 'nw','se' then 'g'
-                            when 'ne','sw' then 'G'
-                    when 'red'
-                        switch obj.orientation
-                            when 'nw','se' then 'r'
-                            when 'ne','sw' then 'R'
-        pos = obj.x + obj.y*10
-        elems[pos] = val
-    redEdge   = [[puzzle.red.start.y    , puzzle.red.start.x],
-                 [puzzle.red.ends[0].y  ,puzzle.red.ends[0].x]]
-    greenEdge = [[puzzle.green.start.y  ,puzzle.green.start.x],
-                 [puzzle.green.ends[0].y,puzzle.green.ends[0].x]]
-    [elems,redEdge,greenEdge]
+    try
+        puzzle ||= getPuzzleSafe()
+            
+        elems = ('.' for i in [0...puzzle.size*puzzle.size])
+        for obj in puzzle.static
+            val = switch obj.type
+                when 'mirror'
+                    switch obj.orientation
+                        when 'nw','se' then '/'
+                        when 'ne','sw' then '\\'
+                when 'block' then 'b'
+                when 'filter'
+                    switch obj.color
+                        when 'green'
+                            switch obj.orientation
+                                when 'nw','se' then 'g'
+                                when 'ne','sw' then 'G'
+                        when 'red'
+                            switch obj.orientation
+                                when 'nw','se' then 'r'
+                                when 'ne','sw' then 'R'
+            pos = obj.x + obj.y*10
+            elems[pos] = val
+        redEdge   = [[puzzle.red.start.y    , puzzle.red.start.x],
+                     [puzzle.red.ends[0].y  ,puzzle.red.ends[0].x]]
+        greenEdge = [[puzzle.green.start.y  ,puzzle.green.start.x],
+                     [puzzle.green.ends[0].y,puzzle.green.ends[0].x]]
+        [elems,redEdge,greenEdge]
+    catch e
+        console.log("error generating + serializing puzzle, trying again")
+        # try again...
+        serialize(puzzle)
 
 exports ?= {}
 exports.serialize = serialize

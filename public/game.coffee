@@ -117,8 +117,7 @@ class GameManager
             if succeeded
                 @incrementEntityType(entity.type) unless entity.static
 
-        @traceAllLasers()
-        return succeeded
+            return succeeded
     
     reset: () ->
         e.satisfied = false for e in @board.endPoints
@@ -254,11 +253,12 @@ class GameManager
 
     removeEntityAt: (x, y) ->
         occupant = @board.getAt(x, y)
+        
         if occupant
-            @decrementEntityType(occupant.type)
-
-        @board.setAt(x, y, false)
-        @traceAllLasers()
+            unless occupant.static
+                @decrementEntityType(occupant.type)
+                @board.setAt(x, y, false)
+                @traceAllLasers()
     
     incrementEntityType: (type) ->
         @numEntitiesByType[type] += 1
@@ -267,14 +267,20 @@ class GameManager
         @numEntitiesByType[type] -= 1
     
     rotateEntityClockwise: (x, y) ->
-        @getEntityAt(x, y).rotateClockwise()
-        @traceAllLasers()
-        @addToChanged(x, y)
-
+        entity = @getEntityAt(x, y)
+        if entity
+            unless entity.static
+                entity.rotateClockwise()
+                @traceAllLasers()
+                @addToChanged(x, y)
+    
     rotateEntityCounterClockwise: (x, y) ->
-        @getEntityAt(x, y).rotateCounterClockwise()
-        @traceAllLasers()
-        @addToChanged(x, y)
+        entity = @getEntityAt(x, y)
+        if entity
+            unless entity.static
+                entity.rotateCounterClockwise()
+                @traceAllLasers()
+                @addToChanged(x, y)
 
     isSolved: (x, y) ->
         # Basic idea is to walk each laser and make sure the path has the following properties
@@ -332,6 +338,7 @@ class Board
     constructor: (@size) ->
         @grid = ((false for x in [0...@size]) for y in [0...@size])
 
+        @startpoints = []
         @endPoints = []
         @lasers = []
 
@@ -359,7 +366,7 @@ class Board
         return result[0]
         
 class Puzzle
-    constructor: (maxEntitiesNum = 1000) ->
+    constructor: (maxEntitiesNum = 1000, @data) ->
         # Actual values to be filled in once we get settled on a representation
         @maxEntitiesByType = {}
         (@maxEntitiesByType[k] = maxEntitiesNum) for _, k of Constants.EntityType
@@ -368,7 +375,7 @@ class Puzzle
         @maxEntitiesByType[entityType]
 
 class GridEntity
-    constructor: (@position, @orientation, @mobility) ->
+    constructor: (@position, @orientation, @static) ->
       @type ||= 0
     
     rotateTo: (orientation) ->
@@ -386,24 +393,24 @@ class GridEntity
 
 
 class Endpoint extends GridEntity
-    constructor: (@position) ->
+    constructor: (@position, @acceptDirection, @color) ->
         @type = Constants.EntityType.END
-        super(@position, 1, false)
+        super(@position, 1, true)
     
     accepts: (laser) -> true
 
 class Startpoint extends GridEntity
-    constructor: (@position, @direction) ->
+    constructor: (@position, @direction, @color) ->
         @type = Constants.EntityType.START
-        super(@position, 1, false)
+        super(@position, 1, true)
     
     accepts: (laser) -> true
     
 
 class Mirror extends GridEntity
-    constructor: (@position, @orientation, @mobility) ->
+    constructor: (@position, @orientation, @static) ->
         @type = Constants.EntityType.MIRROR
-        super(@position, @orientation, @mobility)
+        super(@position, @orientation, @static)
 
     accepts: (laser) -> false
     bounceDirection: (direction) ->
@@ -424,21 +431,21 @@ class Mirror extends GridEntity
 class Block extends GridEntity
     constructor: (@position) ->
         @type = Constants.EntityType.BLOCK
-        super(@position, 1, false)
+        super(@position, 1, true)
 
     accepts: (laser) -> false
         
 class Filter extends GridEntity
-    constructor: (@position, @orientation, @mobility, @color) ->
+    constructor: (@position, @orientation, @color, @static) ->
         @type = Constants.EntityType.FILTER
-        super(@position, @orientation, @mobility)
+        super(@position, @orientation, @static)
 
     accepts: (laser) -> laser.color == @color
 
 class Prism extends GridEntity
-    constructor: (@position, @orientation, @mobility) ->
+    constructor: (@position, @orientation, @static) ->
         @type = Constants.EntityType.PRISM
-        super(@position, @orientation, @mobility)
+        super(@position, @orientation, @static)
     
     splitDirection: (direction) ->
         result =
