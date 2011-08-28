@@ -19,7 +19,7 @@ body {
 }
 .fg { z-index: 12; }
 .fg {}
-.local .fg {}
+.local .fg { border: 1px solid green; margin-top: -1px; margin-left: -1px; }
 .mg { z-index: 11; }
 .bg { z-index: 10; }
 
