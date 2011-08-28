@@ -97,5 +97,5 @@ everyone.now.entityRemoved = (x, y) ->
 everyone.now.entityRotated = (x, y) ->
   everyone.now.rotateEntity userPlot(@user), x, y
 
-everyone.now.validateSolution = (solution)->
-  unimplemented
+#everyone.now.validateSolution = (solution)->
+#  unimplemented
