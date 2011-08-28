@@ -120,6 +120,8 @@ class Plot
       now.entityAdded e
       UI.tool = false
       $("#palate li").removeClass("selected")
+    else
+        return
       
     @drawEntities()
     UI.updateRemainingEntities()
