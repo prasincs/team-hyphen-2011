@@ -8,7 +8,6 @@ class GameManager
         @numEntitiesByType = {}
         
         (@numEntitiesByType[k] = 0) for _, k of Constants.EntityType
-        #@deserializePuzzle()
 
     remainingEntities: (entityType) ->
         @puzzle.getMaxForType(entityType) - @numEntitiesByType[entityType]
@@ -27,6 +26,26 @@ class GameManager
                 ]
             ]
         """
+
+        """
+            / -> Mirror NW
+            \\ -> Mirror SW
+            r -> Red Filter NW
+            R -> Red Filter NE
+            g -> Green Filter NW
+            G -> Green Filter NE
+            ^ -> Block
+            . -> Empty
+        """
+        translationTable =
+            '/'  : (position) -> return new Mirror(position, Constants.EntityOrient.NW, false)
+            '\\' : (position) -> return new Mirror(position, Constants.EntityOrient.SW, false)
+            'r'  : (position) -> return new Filter(position, Constants.EntityOrient.NW, false, Constants.Red)
+            'R'  : (position) -> return new Filter(position, Constants.EntityOrient.NE, false, Constants.Red)
+            'g'  : (position) -> return new Filter(position, Constants.EntityOrient.NW, false, Constants.Green)
+            'G'  : (position) -> return new Filter(position, Constants.EntityOrient.NE, false, Constants.Green)
+            'b'  : (position) -> return new Block(position)
+            '.'  : (position) -> return false
 
         inferDirection = ([x,y]) ->
             # Given position, infer the laser direction
@@ -61,7 +80,7 @@ class GameManager
             c = entities[i]
             row = Math.floor(i / 10)
             col = i % 10
-            @addEntity(@puzzle.translationTable[c]([row, col]))
+            @addEntity(translationTable[c]([row, col]))
         
         if redStart
             redStartEntity = new Startpoint(redStart, inferDirection(redStart), Constants.Red)
@@ -335,26 +354,6 @@ class Puzzle
         # Actual values to be filled in once we get settled on a representation
         @maxEntitiesByType = {}
         (@maxEntitiesByType[k] = maxEntitiesNum) for _, k of Constants.EntityType
-
-        """
-            / -> Mirror NW
-            \\ -> Mirror SW
-            r -> Red Filter NW
-            R -> Red Filter NE
-            g -> Green Filter NW
-            G -> Green Filter NE
-            ^ -> Block
-            . -> Empty
-        """
-        @translationTable =
-            '/'  : (position) -> return new Mirror(position, Constants.EntityOrient.NW, false)
-            '\\' : (position) -> return new Mirror(position, Constants.EntityOrient.SW, false)
-            'r'  : (position) -> return new Filter(position, Constants.EntityOrient.NW, false, Constants.Red)
-            'R'  : (position) -> return new Filter(position, Constants.EntityOrient.NE, false, Constants.Red)
-            'g'  : (position) -> return new Filter(position, Constants.EntityOrient.NW, false, Constants.Green)
-            'G'  : (position) -> return new Filter(position, Constants.EntityOrient.NE, false, Constants.Green)
-            '^'  : (position) -> return new Block(position)
-            '.'  : (position) -> return false
 
     getMaxForType: (entityType) ->
         @maxEntitiesByType[entityType]
