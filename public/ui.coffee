@@ -1,5 +1,12 @@
 now = window.now
 
+ImageManager =
+  cache : {}
+  patternCache : {}
+  draw  : (name, pen, x, y, w, h) ->
+    @cache[name] ||= $("<img/>").attr(src: "/images/#{name}.png")[0]
+    pen.drawImage(@cache[name], x, y, w, h)
+
 class Plot
   
   constructor : (@manager, @front, @mid, @back) ->
@@ -31,31 +38,23 @@ class Plot
           @[e.constructor.name.toLowerCase()](e)
     for laser in @manager.board.lasers
       @laser laser
-        
+  
+  drawImage : (name, x, y) ->
+    ImageManager.draw(name, @pen, x*@scale, y*@scale, @scale, @scale)
+  
   laser : (e) ->
-    @pen.beginPath()
-    @pen.strokeStyle = e.color
     for segment in e.segments
       [sx, sy] = segment.start.position
       
       if segment.end
         [ex, ey] = segment.end.position
       else
-        switch segment.direction
-          when Constants.LaserDirection.N
-            [ex, ey] = [segment.start.position[0], 0]
-          when Constants.LaserDirection.S
-            [ex, ey] = [segment.start.position[0], 9]
-          when Constants.LaserDirection.W
-            [ex, ey] = [0, segment.start.position[1]]
-          when Constants.LaserDirection.E
-            [ex, ey] = [9, segment.start.position[1]]
-
-
-      @pen.moveTo((sx+0.5)*@scale, (sy+0.5)*@scale)
-      @pen.lineTo((ex+0.5)*@scale, (ey+0.5)*@scale)
-    @pen.closePath()
-    @pen.stroke()
+        [ex, ey] = switch segment.direction
+          when Constants.LaserDirection.N then [segment.start.position[0], 0]
+          when Constants.LaserDirection.S then [segment.start.position[0], 9]
+          when Constants.LaserDirection.W then [0, segment.start.position[1]]
+          when Constants.LaserDirection.E then [9, segment.start.position[1]]
+      # draw path here
     
 
   block : (e) ->
