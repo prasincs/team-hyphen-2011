@@ -252,8 +252,9 @@ UI =
     
     if old = @plots[manager.id]
       $(old.front).parent().remove()
-    
+    console.log("manager-id "+ manager.id)
     @plots[manager.id] = p
+
     
     p.drawTiles()
     p.drawEntities()
