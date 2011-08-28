@@ -274,8 +274,6 @@ class PuzzleObj
         for line in board
             console.log(line.join(' '))
 
-p = new PuzzleObj()
-
 translationTable = {
     '/':[MirrorObj,'nw'],
     '\\':[MirrorObj,'ne'],
@@ -327,8 +325,6 @@ serialize = (puzzle=false) ->
     greenEdge = [[puzzle.green.start.x,puzzle.green.start.y],
                  [puzzle.green.ends[0].x,puzzle.green.ends[0].y]]
     [elems,redEdge,greenEdge]
-
-#serialize(p)
 
 exports ?= {}
 exports.serialize = serialize
