@@ -16,7 +16,13 @@ $ ->
     UI.addPlot new GameManager(puzzle, x, y), now.core.clientId == clientId
     
   now.addEntity = (plot, e) ->
-    notMyPlot(plot)?.addEntity(e) # we gotta recreate this entity
+    switch e.type
+      when Constants.EntityType.MIRROR
+        notMyPlot(plot)?.mirror(e)
+      when Constants.EntityType.PRISM
+        notMyPlot(plot)?.prism(e)
+      when Constants.EntityType.FILTER
+        notMyPlot(plot)?.filter(e)
     
   now.removeEntity = (plot, x, y) ->
     notMyPlot(plot)?.removeEntityAt(x,y)
@@ -37,3 +43,4 @@ $ ->
   
   now.endSprint = (timeLeft) ->
     UI.sprintTime = - timeLeft - Date.now()
+
