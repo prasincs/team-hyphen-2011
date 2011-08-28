@@ -26,7 +26,7 @@ everyone = nowjs.initialize(server) #, {socketio: {'log level': 1}})
 lastPlotId = 1
 idMap = {}
 plots = {}
-lastPlot = [0,0] #get from database
+lastPlot = [10,10] #get from database
 usedPlots = {}
 
 isPlotAssigned = (x,y)->
@@ -78,7 +78,7 @@ everyone.now.requestPlot = (difficulty) ->
 everyone.now.requestNeighborPlots = (id)->
   for clientId, gm of plots
     if  clientId != @user.clientId
-      everyone.now.drawPlot gm.id, [gm.gridX, gm.gridY], gm.puzzle, clientId
+      @now.drawPlot gm.id, [gm.gridX, gm.gridY], gm.puzzle, clientId
 
 
 everyone.now.entityAdded = (entity)->
