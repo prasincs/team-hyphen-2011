@@ -57,7 +57,7 @@ class Plot
       length = Math.min(length*@scale, 500)
 
       i = ImageManager.get("laser-long")
-      z = UI.zoomLevel
+      z = UI.zoom() / 500
       @pen.drawImage(i, 0, 0, length, 25, 0, -12.5*z, length, 25*z)
       @pen.restore()
     
@@ -89,7 +89,7 @@ class Plot
         
       name = segment.end?.constructor.name
       if name == 'Mirror' or name == 'Filter'
-        w = 25*UI.zoomLevel
+        w = UI.zoom()/20
         do (w, segment) =>
           @drawQueue.push ->
             @pen.save()
@@ -138,7 +138,7 @@ class Plot
   hoverHandler : (e) =>
     @clearLast()
 
-    return if UI.zoomLevel < 0.5
+    return if UI.zoomLevel > 1
 
     @lastMouseMove = [x,y] = @coordsToSquare e
         
@@ -151,7 +151,7 @@ class Plot
       @[UI.tool.toLowerCase()](new (window[UI.tool])([x,y], 1, true))
     
   clickHandler : (e) =>
-    return if UI.zoomLevel < 0.5
+    return if UI.zoomLevel > 1
     
     [x, y] = @coordsToSquare e
     
@@ -176,7 +176,7 @@ class Plot
     @clearLast()
     
 UI =
-  zoomLevel : 1 # between 0 and 1 with 1 being max zoom level and 0.25 being 4x further away
+  zoomLevel : 0
   plots     : []
   tool      : false
   dims      : [0, 0]
@@ -184,6 +184,7 @@ UI =
   localDiv  : false
   sprintTime: false
   nav       : false
+  zoomLevels : [500, 400, 300, 200, 100]
   
   updateRemainingEntities : ->
     if @localDiv
@@ -229,14 +230,12 @@ UI =
       false
 
     $(document).mousewheel (e, delta) =>
-
-      prev = @zoomLevel
+      prev = @zoom() / 500.0
       if delta > 0
-        @zoomLevel *= 1.15
-      else
-        @zoomLevel /= 1.15
-        
-      @zoomLevel = Math.max(0.1, Math.min(1, @zoomLevel)) 
+        @zoomLevel += 1 if @zoomLevel < 4
+      else if @zoomLevel > 0
+        @zoomLevel -= 1
+      curr = @zoom() / 500.0  
       
       # < 1 if zoomed in
       d = @nav.draggable()                  # pretend going from 1 to 0.75
@@ -246,8 +245,8 @@ UI =
       oldX = (centerX - o.left) / prev      # 1100
       oldY = (centerY - o.top)  / prev      # 1100
       
-      x = oldX*@zoomLevel + o.left
-      y = oldY*@zoomLevel + o.top
+      x = oldX*curr + o.left
+      y = oldY*curr + o.top
       o.left += centerX - x
       o.top  += centerY - y
       
@@ -261,17 +260,18 @@ UI =
       $("#palate li").removeClass("selected")
       $(this).addClass("selected")
   
+  zoom : () -> @zoomLevels[@zoomLevel]
+  
   resizePlots : ->
-    $("canvas").attr width: 500*@zoomLevel, height: 500*@zoomLevel
+    $("canvas").attr width: @zoom(), height: @zoom()
     for plot in @plots when plot
       plot.resize()
-      d = 510 * @zoomLevel
+      d = @zoom() * 1.01
       css =
-        left: Math.round(d*plot.manager.gridX)
-        top: Math.round(d*plot.manager.gridY)
-        width:  500*@zoomLevel
-        height: 500*@zoomLevel
-        borderWidth: Math.ceil(5 * @zoomLevel)
+        left:        d*plot.manager.gridX
+        top:         d*plot.manager.gridY
+        width:       @zoom()
+        height:      @zoom()
       $(plot.front).parent().css(css)
     @draw()
   
