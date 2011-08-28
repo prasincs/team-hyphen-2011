@@ -74,7 +74,7 @@ class GameManager
         [redStart, redEnd]  = @puzzle.data[1]
 
         if @puzzle.data.length < 2
-            [blueStart, blueEnd] = @puzzle.data?[2]
+            [blueStart, blueEnd] = @puzzle.data[2]
        
         for i in [0...entities.length]
             c = entities[i]
@@ -115,7 +115,7 @@ class GameManager
             @traceAllLasers()
             
             if succeeded
-                @incrementEntityType(entity.type)
+                @incrementEntityType(entity.type) unless entity.static
 
             return succeeded
     
@@ -166,8 +166,8 @@ class GameManager
             laser.segments.push(firstSeg)
 
 
- 
-        while(x >= 0 and y >= 0 and x < @board.size and y < @board.size)
+        blocked = false
+        while( not blocked and x >= 0 and y >= 0 and x < @board.size and y < @board.size)
             mapDir(currDir)
             current = @board.getAt(x, y)
             unless current
@@ -189,9 +189,11 @@ class GameManager
 
                     when Constants.EntityType.BLOCK
                         # Do nothing because ITS A FUCKING BLOCK
+                        blocked = true
                         break
                     when Constants.EntityType.FILTER
                         if current.color isnt laser.color
+                            blocked = true
                             break
                         else
                             seg = new LaserSegment( current, null, laser, currDir)
@@ -222,6 +224,13 @@ class GameManager
             mapDir(currDir)
             x += dx
             y += dy
+
+            # Special check for endpoints
+            endpoint = (e for e in this.board.endPoints when x is e.position[0] and y is e.position[1])
+            if endpoint.length
+                previous = laser.segments[laser.segments.length-1]
+                previous.end = endpoint[0]
+            
         if branches.length
             laser.merge(branches)
 
