@@ -3,18 +3,20 @@ now = window.now
 ImageManager =
   cache : {}
   patternCache : {}
-  draw  : (name, pen, x, y, w, h) ->
+  get : (name) ->
     @cache[name] ||= $("<img/>").attr(src: "/images/#{name}.png")[0]
-    pen.drawImage(@cache[name], x, y, w, h)
+  draw  : (name, pen, x, y, w, h) ->
+    pen.drawImage(@get(name), x, y, w, h)
 
-class Plot
-  
+class Plot  
   constructor : (@manager, @front, @mid, @back) ->
     @fp  = @front.getContext '2d'
     @mp  = @mid.getContext '2d'
     @bp  = @back.getContext '2d'
     @pen = @mp
+    @drawQueue = []
     @resize()
+    
     
   resize : ->
     @size  = @front.height
@@ -32,42 +34,60 @@ class Plot
   drawEntities : ->
     @pen = @mp
     @pen.clearRect 0, 0, @size, @size
+    @drawQueue = []
     for x in [0..9]
       for y in [0..9]
         if e = @manager.getEntityAt(x, y)
           @[e.constructor.name.toLowerCase()](e)
     for laser in @manager.board.lasers
       @laser laser
+    for fn in @drawQueue
+      fn.apply(this, [])
   
   drawImage : (name, x, y) ->
     ImageManager.draw(name, @pen, x*@scale, y*@scale, @scale, @scale)
   
   laser : (e) ->
+    lilLaser = (angle, length) =>
+      @pen.save()
+      
+      @pen.translate((sx+t[0])*@scale, (sy+t[1])*@scale)
+      @pen.rotate(angle)
+
+      i = ImageManager.get("laser-long")
+      z = UI.zoomLevel
+      @pen.drawImage(i, 0, 0, length*@scale, 25, 0, -12.5*z, length*@scale, 25*z)
+      @pen.restore()
+    
+    len = ([ex, ey]) ->
+      Math.abs(if sx == ex then sy-ey else sx-ex)
+    
     for segment in e.segments
+      angle = (segment.direction-1) * Math.PI/2
       [sx, sy] = segment.start.position
-
       if segment.start.type is Constants.EntityType.START
-        [ex, ey] = segment.end.position
-        [sx, sy] = switch segment.direction
-          when Constants.LaserDirection.N then [sx + 0.5, sy + 0.5]
-          when Constants.LaserDirection.S then [sx + 0.5, sy - 0.5]
-          when Constants.LaserDirection.W then [sx + 0.5, sy + 0.5]
-          when Constants.LaserDirection.E then [sx - 0.5, sy + 0.5]
-        @pen.moveTo(sx*@scale, sy*@scale)
-        @pen.lineTo((ex+0.5)*@scale, (ey+0.5)*@scale)
+        t = switch segment.direction
+          when Constants.LaserDirection.N then [ 0.5,  0.5]
+          when Constants.LaserDirection.S then [ 0.5, -0.5]
+          when Constants.LaserDirection.W then [ 0.5,  0.5]
+          when Constants.LaserDirection.E then [-0.5,  0.5]
+        lilLaser(angle, len(segment.end.position) + 1, t)
       else if segment.end
-        [ex, ey] = segment.end.position
-        @pen.moveTo((sx+0.5)*@scale, (sy+0.5)*@scale)
-        @pen.lineTo((ex+0.5)*@scale, (ey+0.5)*@scale)
+        l = len(segment.end.position) + 0.5
+        t = [0.5, 0.5]
+        lilLaser(angle, l)
       else if not segment.end or segment.end.type is Constants.EntityType.END
-        [ex, ey] = switch segment.direction
-          when Constants.LaserDirection.N then [segment.start.position[0] + 0.5, -1]
-          when Constants.LaserDirection.S then [segment.start.position[0] + 0.5, 10]
-          when Constants.LaserDirection.W then [-1, segment.start.position[1] + 0.5]
-          when Constants.LaserDirection.E then [10, segment.start.position[1] + 0.5]
-        @pen.moveTo((sx+0.5)*@scale, (sy+0.5)*@scale)
-        @pen.lineTo(ex*@scale, ey*@scale)
-
+        t = [0.5, 0.5]
+        lilLaser(angle, 10)
+        
+      name = segment.end?.constructor.name
+      if name == 'Mirror' or name == 'Filter'
+        w = 25*UI.zoomLevel
+        do (w, segment) =>
+          @drawQueue.push ->
+            ImageManager.draw("laser-reflect-component-red", @pen,
+            (segment.end.position[0]+0.5)*@scale-w/2,
+            (segment.end.position[1]+0.5)*@scale-w/2, w, w )
     
 
   block : (e) ->
@@ -110,10 +130,9 @@ class Plot
 
   clearLast : () ->
     if @lastMouseMove
-      @fp.clearRect @lastMouseMove[0]*@scale, @lastMouseMove[1]*@scale, @scale, @scale
-    
+      @fp.clearRect @lastMouseMove[0]*@scale, @lastMouseMove[1]*@scale, @scale, @scale 
 
-  hoverHandler : (e) ->
+  hoverHandler : (e) =>
     @clearLast()
 
     return if UI.zoomLevel < 0.5
@@ -122,13 +141,13 @@ class Plot
         
     @fp.strokeStyle = '#00ff00' # ugly color for debugging
     @fp.strokeRect x*@scale+2, y*@scale+2, @scale-4, @scale-4
-
+    
     # display tool
     if !@manager.getEntityAt(x, y) and UI.tool
       @pen = @fp
       @[UI.tool.toLowerCase()](new (window[UI.tool])([x,y], 1, true))
     
-  clickHandler : (e) ->
+  clickHandler : (e) =>
     return if UI.zoomLevel < 0.5
     
     [x, y] = @coordsToSquare e
@@ -287,13 +306,11 @@ UI =
       $div.mouseout  (e) -> p.clearLast()     or true
       @updateRemainingEntities()
     
-    if old = @plots[manager.id || 1]
+    if old = @plots[manager.id]
       $(old.front).parent().remove()
-    console.log("manager-id "+ manager.id)
-    @plots[manager.id || 1] = p
+    @plots[manager.id] = p
     
     #testing stuff
-    """
     p.manager.addEntity(new Mirror([5,5], Constants.EntityOrient.NE))
     p.manager.addEntity(new Endpoint([5,0]))
     start = new Startpoint([0,5], Constants.LaserDirection.E)
@@ -304,10 +321,9 @@ UI =
 
     p.drawTiles()
     p.drawEntities()
-    """
     
     @dims = [Math.max(@dims[0], 1+manager.gridX),
              Math.max(@dims[1], 1+manager.gridY)]
                       
-    $div.css left: "#{p.size*manager.gridX}px", top: "#{p.size*manager.gridY}px"
+    $div.css left: p.size*manager.gridX, top: p.size*manager.gridY
     @scrollTo(@localDiv) if mine
