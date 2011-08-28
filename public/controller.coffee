@@ -37,5 +37,3 @@ $ ->
   
   now.endSprint = (timeLeft) ->
     UI.sprintTime = - timeLeft - Date.now()
-
-  now.requestPlot 1

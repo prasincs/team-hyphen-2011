@@ -165,7 +165,7 @@ UI =
       
     $(document).bind 'contextmenu', -> false
     
-    $("#map").infiniDrag()
+    wall = $.infinitedrag("#map", {}, {width: 500, height: 500, oncreate: ($e) -> })
     #$("#map").draggable({scroll: false})
     
     $("#difficulty-menu a").click ->
