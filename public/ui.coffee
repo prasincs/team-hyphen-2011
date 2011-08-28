@@ -37,7 +37,21 @@ class Plot
     @pen.strokeStyle = e.color
     for segment in e.segments
       [sx, sy] = segment.start.position
-      [ex, ey] = segment.end.position
+      
+      if segment.end
+        [ex, ey] = segment.end.position
+      else
+        switch segment.direction
+          when Constants.LaserDirection.N
+            [ex, ey] = [segment.start.position[0], 0]
+          when Constants.LaserDirection.S
+            [ex, ey] = [segment.start.position[0], 9]
+          when Constants.LaserDirection.W
+            [ex, ey] = [0, segment.start.position[1]]
+          when Constants.LaserDirection.E
+            [ex, ey] = [9, segment.start.position[1]]
+
+
       @pen.moveTo((sx+0.5)*@scale, (sy+0.5)*@scale)
       @pen.lineTo((ex+0.5)*@scale, (ey+0.5)*@scale)
     @pen.closePath()
@@ -247,6 +261,16 @@ UI =
       $(old.front).parent().remove()
     
     (@plots[manager.gridX] ?= [])[manager.gridY] = p
+
+    #testing stuff
+    p.manager.addEntity(new Mirror([5,5], Constants.EntityOrient.NE))
+    p.manager.addEntity(new Endpoint([5,0]))
+    start = new Startpoint([0,5], Constants.LaserDirection.E)
+    laser = new Laser('#F00', start)
+
+    p.manager.addEntity(start)
+    p.manager.addLaser(laser)
+
     p.drawTiles()
     p.drawEntities()
     @bottomRight = [Math.max(@bottomRight[0], p.size*(1+manager.gridX)),

@@ -2,16 +2,16 @@
 
 Constants =
     EntityOrient :
-        NW: 1
-        NE: 2
-        SE: 3
-        SW: 4
+        NW: 0
+        NE: 1
+        SE: 2
+        SW: 3
 
     LaserDirection:
-        N: 1
-        E: 2
-        S: 3
-        W: 4
+        N: 0
+        E: 1
+        S: 2
+        W: 3
 
     EntityType :
         MIRROR: 1
