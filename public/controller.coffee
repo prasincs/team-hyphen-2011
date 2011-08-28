@@ -6,14 +6,12 @@ $ ->
   reconstitute = (blank, data) -> data.__proto__ = blank
   
   notMyPlot = (plotId) ->
-    plot = UI.plots[plotId]
-    plot
+    if plotId == UI.localPlot.manager.id then undefined else UI.plots[plotId]
   
   now = window.now ?= {}
 
   now.startPlot = (id, coords, puzzle, clientId) ->
-    x = coords[0]
-    y = coords[1]
+    [x, y] = coords
     reconstitute new Puzzle(1), puzzle
     manager = new GameManager(id, puzzle, x, y)
     manager.deserializePuzzle()
@@ -30,13 +28,12 @@ $ ->
 
   
   now.addEntity = (plotId, e) ->
-    switch e.type
-      when Constants.EntityType.MIRROR
-        notMyPlot(plotId)?.mirror(e)
-      when Constants.EntityType.PRISM
-        notMyPlot(plotId)?.prism(e)
-      when Constants.EntityType.FILTER
-        notMyPlot(plotId)?.filter(e)
+    if (plot = notMyPlot(plotId))
+      if Constants.EntityType.MIRROR == e.type
+        plot.addEntity(new Mirror(e.position, e.orientation, true))
+      else
+        plot.addEntity(new Filter(e.position, e.orientation, e.color, true))
+      plot.draw()
   
   now.removeEntity = (plot, x, y) ->
     notMyPlot(plot)?.removeEntityAt(x,y)

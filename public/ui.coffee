@@ -87,11 +87,12 @@ class Plot
     @drawImage "block", x, y
     
   mirror : (e) ->
+    console.log e
     [x, y] = e.position
     @pen.save()
     @pen.translate((x+0.5) * @scale, (y+0.5) * @scale)
     @pen.rotate(Math.PI/2 * (e.orientation-1))
-    name = if e.color? then "filter-#{e.color}" else "mirror"
+    name = if e.color then "filter-#{e.color}" else "mirror"
     @drawImage name, -0.5, -0.5
     @pen.restore()
   
