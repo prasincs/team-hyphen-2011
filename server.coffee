@@ -68,8 +68,7 @@ getNewPlot = ->
 
 everyone.now.requestPlot = (difficulty) ->
   [x,y] = getNewPlot()
-  puzzle = generator.serialize
-  #puzzle = new Puzzle(10)
+  puzzle = new Puzzle(10, generator.serialize())
   gm = new GameManager lastPlotId, puzzle, x ,y
   everyone.now.startPlot lastPlotId , [x, y], puzzle, @user.clientId
   lastPlotId+=1
@@ -85,7 +84,6 @@ everyone.now.requestNeighborPlots = (id)->
 everyone.now.entityAdded = (entity)->
   console.log "entity added " + entity.type
   [x,y] = entity.position
-
   type = Constants.RevEntityType[entity.type]
   et = new Game[type](entity.position, entity.orientation, entity.mobility)
   
@@ -98,3 +96,6 @@ everyone.now.entityRemoved = (x, y) ->
   
 everyone.now.entityRotated = (x, y) ->
   everyone.now.rotateEntity userPlot(@user), x, y
+
+#everyone.now.validateSolution = (solution)->
+#  unimplemented

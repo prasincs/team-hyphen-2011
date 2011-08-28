@@ -274,8 +274,6 @@ class PuzzleObj
         for line in board
             console.log(line.join(' '))
 
-p = new PuzzleObj()
-
 translationTable = {
     '/':[MirrorObj,'nw'],
     '\\':[MirrorObj,'ne'],
@@ -289,33 +287,49 @@ translationTable = {
 
     #[ 100 char string, [[x,y],[x,y]], [[x,y],[x,y]] ]
 
-serialize = (puzzle=false) =>
-    puzzle ||= new PuzzleObj()
-    elems = ('.' for i in [0...puzzle.size*puzzle.size])
-    for obj in puzzle.static
-        val = switch obj.type
-            when 'mirror'
-                switch obj.orientation
-                    when 'nw','se' then '/'
-                    when 'ne','sw' then '\\'
-            when 'block' then 'b'
-            when 'filter'
-                switch obj.color
-                    when 'green'
-                        switch obj.orientation
-                            when 'nw','se' then 'g'
-                            when 'ne','sw' then 'G'
-                    when 'red'
-                        switch obj.orientation
-                            when 'nw','se' then 'r'
-                            when 'ne','sw' then 'R'
-        pos = obj.x + obj.y*10
-        elems[pos] = val
-    redEdge = [puzzle.red.start,puzzle.red.ends[0]]
-    greenEdge = [puzzle.green.start,puzzle.green.ends[0]]
-    [elems,redEdge,greenEdge]
+getPuzzleSafe = ->
+    unsafe = true
+    while unsafe
+        try
+            p = new PuzzleObj()
+            unsafe = false
+        catch e
+            unsafe = true
+    p
 
-#serialize(p)
+serialize = (puzzle=false) ->
+    try
+        puzzle ||= getPuzzleSafe()
+            
+        elems = ('.' for i in [0...puzzle.size*puzzle.size])
+        for obj in puzzle.static
+            val = switch obj.type
+                when 'mirror'
+                    switch obj.orientation
+                        when 'nw','se' then '/'
+                        when 'ne','sw' then '\\'
+                when 'block' then 'b'
+                when 'filter'
+                    switch obj.color
+                        when 'green'
+                            switch obj.orientation
+                                when 'nw','se' then 'g'
+                                when 'ne','sw' then 'G'
+                        when 'red'
+                            switch obj.orientation
+                                when 'nw','se' then 'r'
+                                when 'ne','sw' then 'R'
+            pos = obj.x + obj.y*10
+            elems[pos] = val
+        redEdge   = [[puzzle.red.start.y    , puzzle.red.start.x],
+                     [puzzle.red.ends[0].y  ,puzzle.red.ends[0].x]]
+        greenEdge = [[puzzle.green.start.y  ,puzzle.green.start.x],
+                     [puzzle.green.ends[0].y,puzzle.green.ends[0].x]]
+        [elems,redEdge,greenEdge]
+    catch e
+        console.log("error generating + serializing puzzle, trying again")
+        # try again...
+        serialize(puzzle)
 
 exports ?= {}
 exports.serialize = serialize

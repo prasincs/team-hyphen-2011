@@ -15,13 +15,18 @@ $ ->
     x = coords[0]
     y = coords[1]
     reconstitute new Puzzle(1), puzzle
-    UI.addPlot new GameManager(id, puzzle, x, y), now.core.clientId == clientId
+    manager = new GameManager(id, puzzle, x, y)
+    manager.deserializePuzzle()
+    UI.addPlot manager, now.core.clientId == clientId
     now.requestNeighborPlots id
+    UI.draw()
 
   now.drawPlot = (id, [x,y], puzzle, clientId) ->
-    reconstitute new Puzzle(1), puzzle
     if clientId != now.core.clientId
-      UI.addPlot new GameManager(id, puzzle, x, y)
+      reconstitute new Puzzle(1), puzzle
+      manager = new GameManager(id, puzzle, x, y)
+      manager.deserializePuzzle()
+      UI.addPlot manager
 
   
   now.addEntity = (plotId, e) ->

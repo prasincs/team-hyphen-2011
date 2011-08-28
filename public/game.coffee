@@ -8,7 +8,6 @@ class GameManager
         @numEntitiesByType = {}
         
         (@numEntitiesByType[k] = 0) for _, k of Constants.EntityType
-        #@deserializePuzzle()
 
     remainingEntities: (entityType) ->
         @puzzle.getMaxForType(entityType) - @numEntitiesByType[entityType]
@@ -27,6 +26,26 @@ class GameManager
                 ]
             ]
         """
+
+        """
+            / -> Mirror NW
+            \\ -> Mirror SW
+            r -> Red Filter NW
+            R -> Red Filter NE
+            g -> Green Filter NW
+            G -> Green Filter NE
+            ^ -> Block
+            . -> Empty
+        """
+        translationTable =
+            '/'  : (position) -> return new Mirror(position, Constants.EntityOrient.NW, true)
+            '\\' : (position) -> return new Mirror(position, Constants.EntityOrient.SW, true)
+            'r'  : (position) -> return new Filter(position, Constants.EntityOrient.NW, Constants.Red, true)
+            'R'  : (position) -> return new Filter(position, Constants.EntityOrient.NE, Constants.Red, true)
+            'g'  : (position) -> return new Filter(position, Constants.EntityOrient.NW, Constants.Green, true)
+            'G'  : (position) -> return new Filter(position, Constants.EntityOrient.NE, Constants.Green, true)
+            'b'  : (position) -> return new Block(position)
+            '.'  : (position) -> return false
 
         inferDirection = ([x,y]) ->
             # Given position, infer the laser direction
@@ -54,14 +73,14 @@ class GameManager
 
         [redStart, redEnd]  = @puzzle.data[1]
 
-        if @puzzle.data.length < 2
-            [blueStart, blueEnd] = @puzzle.data?[2]
+        if @puzzle.data.length is 3
+            [blueStart, blueEnd] = @puzzle.data[2]
        
         for i in [0...entities.length]
             c = entities[i]
             row = Math.floor(i / 10)
             col = i % 10
-            @addEntity(@puzzle.translationTable[c]([row, col]))
+            @addEntity(translationTable[c]([row, col]))
         
         if redStart
             redStartEntity = new Startpoint(redStart, inferDirection(redStart), Constants.Red)
@@ -71,7 +90,7 @@ class GameManager
             @addEntity(new Endpoint(redEnd, inferAcceptDirection(redEnd), Constants.Red))
         if blueStart
             blueStartEntity = new Startpoint(blueStart, inferDirection(blueStart), Constants.Blue)
-            @addeEntity(blueStartEntity)
+            @addEntity(blueStartEntity)
             @addLaser(new Laser(Constants.Blue, blueStartEntity))
         if blueEnd
             @addEntity(new Endpoint(blueEnd, inferAcceptDirection(blueEnd), Constants.Blue))
@@ -96,7 +115,7 @@ class GameManager
             @traceAllLasers()
             
             if succeeded
-                @incrementEntityType(entity.type)
+                @incrementEntityType(entity.type) unless entity.static
 
             return succeeded
     
@@ -147,8 +166,8 @@ class GameManager
             laser.segments.push(firstSeg)
 
 
- 
-        while(x >= 0 and y >= 0 and x < @board.size and y < @board.size)
+        blocked = false
+        while( not blocked and x >= 0 and y >= 0 and x < @board.size and y < @board.size)
             mapDir(currDir)
             current = @board.getAt(x, y)
             unless current
@@ -170,9 +189,11 @@ class GameManager
 
                     when Constants.EntityType.BLOCK
                         # Do nothing because ITS A FUCKING BLOCK
+                        blocked = true
                         break
                     when Constants.EntityType.FILTER
                         if current.color isnt laser.color
+                            blocked = true
                             break
                         else
                             seg = new LaserSegment( current, null, laser, currDir)
@@ -203,6 +224,13 @@ class GameManager
             mapDir(currDir)
             x += dx
             y += dy
+
+            # Special check for endpoints
+            endpoint = (e for e in this.board.endPoints when x is e.position[0] and y is e.position[1])
+            if endpoint.length
+                previous = laser.segments[laser.segments.length-1]
+                previous.end = endpoint[0]
+            
         if branches.length
             laser.merge(branches)
 
@@ -225,11 +253,12 @@ class GameManager
 
     removeEntityAt: (x, y) ->
         occupant = @board.getAt(x, y)
+        
         if occupant
-            @decrementEntityType(occupant.type)
-
-        @board.setAt(x, y, false)
-        @traceAllLasers()
+            unless occupant.static
+                @decrementEntityType(occupant.type)
+                @board.setAt(x, y, false)
+                @traceAllLasers()
     
     incrementEntityType: (type) ->
         @numEntitiesByType[type] += 1
@@ -238,14 +267,20 @@ class GameManager
         @numEntitiesByType[type] -= 1
     
     rotateEntityClockwise: (x, y) ->
-        @getEntityAt(x, y).rotateClockwise()
-        @traceAllLasers()
-        @addToChanged(x, y)
-
+        entity = @getEntityAt(x, y)
+        if entity
+            unless entity.static
+                entity.rotateClockwise()
+                @traceAllLasers()
+                @addToChanged(x, y)
+    
     rotateEntityCounterClockwise: (x, y) ->
-        @getEntityAt(x, y).rotateCounterClockwise()
-        @traceAllLasers()
-        @addToChanged(x, y)
+        entity = @getEntityAt(x, y)
+        if entity
+            unless entity.static
+                entity.rotateCounterClockwise()
+                @traceAllLasers()
+                @addToChanged(x, y)
 
     isSolved: (x, y) ->
         # Basic idea is to walk each laser and make sure the path has the following properties
@@ -266,7 +301,7 @@ class GameManager
 
         if(segment.start.position[0] is segment.end.position[0])
             # Check if any of the entities between the start / end on this row are blockers.
-            colBetween = @board.grid[segment.start.position[0]][segment.start.position[1]+1..segment.end.position[1]-1]
+            colBetween = @board.grid[segment.start.position[0]][Math.max(segment.start.position[1]+1, 9)..Math.min(segment.end.position[1]-1, 0)]
             
             blockers = (elem for elem in colBetween when elem and not elem.accepts(segment.laser))
 
@@ -275,7 +310,7 @@ class GameManager
         else if(segment.start.position[1] is segment.end.position[1])
             # Check if any of the entities between the start / end on this column are blockers
             row = (@board.grid[segment.start.position[1]][k] for k in [0...@board.size])
-            row = row[segment.start.position[0]+1..segment.end.position[0]-1]
+            row = row[Math.max(segment.start.position[0]+1, 9)..Math.min(segment.end.position[0]-1, 0)]
             
             blockers = (elem for elem in row when elem and not elem.accepts(segment.laser))
             
@@ -336,31 +371,11 @@ class Puzzle
         @maxEntitiesByType = {}
         (@maxEntitiesByType[k] = maxEntitiesNum) for _, k of Constants.EntityType
 
-        """
-            / -> Mirror NW
-            \\ -> Mirror SW
-            r -> Red Filter NW
-            R -> Red Filter NE
-            g -> Green Filter NW
-            G -> Green Filter NE
-            ^ -> Block
-            . -> Empty
-        """
-        @translationTable =
-            '/'  : (position) -> return new Mirror(position, Constants.EntityOrient.NW, false)
-            '\\' : (position) -> return new Mirror(position, Constants.EntityOrient.SW, false)
-            'r'  : (position) -> return new Filter(position, Constants.EntityOrient.NW, false, Constants.Red)
-            'R'  : (position) -> return new Filter(position, Constants.EntityOrient.NE, false, Constants.Red)
-            'g'  : (position) -> return new Filter(position, Constants.EntityOrient.NW, false, Constants.Green)
-            'G'  : (position) -> return new Filter(position, Constants.EntityOrient.NE, false, Constants.Green)
-            '^'  : (position) -> return new Block(position)
-            '.'  : (position) -> return false
-
     getMaxForType: (entityType) ->
         @maxEntitiesByType[entityType]
 
 class GridEntity
-    constructor: (@position, @orientation, @mobility) ->
+    constructor: (@position, @orientation, @static) ->
       @type ||= 0
     
     rotateTo: (orientation) ->
@@ -380,22 +395,22 @@ class GridEntity
 class Endpoint extends GridEntity
     constructor: (@position, @acceptDirection, @color) ->
         @type = Constants.EntityType.END
-        super(@position, 1, false)
+        super(@position, 1, true)
     
     accepts: (laser) -> true
 
 class Startpoint extends GridEntity
     constructor: (@position, @direction, @color) ->
         @type = Constants.EntityType.START
-        super(@position, 1, false)
+        super(@position, 1, true)
     
     accepts: (laser) -> true
     
 
 class Mirror extends GridEntity
-    constructor: (@position, @orientation, @mobility) ->
+    constructor: (@position, @orientation, @static) ->
         @type = Constants.EntityType.MIRROR
-        super(@position, @orientation, @mobility)
+        super(@position, @orientation, @static)
 
     accepts: (laser) -> false
     bounceDirection: (direction) ->
@@ -416,21 +431,21 @@ class Mirror extends GridEntity
 class Block extends GridEntity
     constructor: (@position) ->
         @type = Constants.EntityType.BLOCK
-        super(@position, 1, false)
+        super(@position, 1, true)
 
     accepts: (laser) -> false
         
 class Filter extends GridEntity
-    constructor: (@position, @orientation, @mobility, @color) ->
+    constructor: (@position, @orientation, @color, @static) ->
         @type = Constants.EntityType.FILTER
-        super(@position, @orientation, @mobility)
+        super(@position, @orientation, @static)
 
     accepts: (laser) -> laser.color == @color
 
 class Prism extends GridEntity
-    constructor: (@position, @orientation, @mobility) ->
+    constructor: (@position, @orientation, @static) ->
         @type = Constants.EntityType.PRISM
-        super(@position, @orientation, @mobility)
+        super(@position, @orientation, @static)
     
     splitDirection: (direction) ->
         result =
