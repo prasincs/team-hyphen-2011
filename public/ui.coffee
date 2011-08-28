@@ -130,7 +130,6 @@ UI =
   topLeft   : [0, 0]
   bottomRight : [0, 0]
   plots     : []
-  container : false
   tool      : false
   worldDims : [2500, 2500]
   localPlot : false
@@ -168,6 +167,11 @@ UI =
     
     $("#map").infiniDrag()
     #$("#map").draggable({scroll: false})
+    
+    $("#difficulty-menu a").click ->
+      $("#start-panel").hide()
+      now.requestPlot(parseInt($(this).data("difficulty"))) # now loading....
+      false
 
     $(document).mousewheel (e, delta) =>
       if delta > 0
@@ -191,7 +195,9 @@ UI =
       
       @draw()
       
-    
+    $("#give-up").click ->
+      $("#start-panel").show()
+      
     $("#palate li").click ->
       UI.tool = $(this).data("tool")
       $("#palate li").removeClass("selected")

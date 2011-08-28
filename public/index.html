@@ -34,7 +34,7 @@
                 margin: 0;
                 padding: 0;
                 font-family: "Aldrich", "Helvetica";
-                font-size: 18px;
+                font-size: 16px;
                 background: #fff;  
                 overflow: hidden;
             }
@@ -92,7 +92,7 @@
             }
             
             #palate li {
-                font-size: 32px;
+                font-size: 24px;
                 margin: 0 0.5em 1em 0 ; padding: 0;
                 text-align: right;
             }
@@ -114,20 +114,32 @@
             #tl {
 
             }
+            
+            #start-panel {
+                position: absolute;
+                width: 300px;
+                top: 100px;
+                left: 100px;
+                background: #fff;
+                border: 10px solid #000;
+                z-index: 500;
+            }
         </style>
       </head>
     <body>
         <header>
             <span id="sprintTimer"></span><span id="sprintText"></span>
+            <a href="#" id="give-up">I give up!</a>
+            
             <h1>Scoreboard</h1>
             ...
-            <h1>Controls</h1>
+            <h1>Spread the Job</h1>
             <menu id="menu">
-                <!-- li><a href="http://twitter.com/share"
+                <li><a href="http://twitter.com/share"
                        class="twitter-share-button"
                        data-text="Name: tagline.">Tweet</a></li>
                 <li><g:plusone size="medium"></g:plusone></li>
-                <li><div id="fb-root"></div><script src="http://connect.facebook.net/en_US/all.js#xfbml=1"></script><fb:like href="" send="false" layout="button_count" show_faces="false" font=""></fb:like></li -->
+                <li><div id="fb-root"></div><script src="http://connect.facebook.net/en_US/all.js#xfbml=1"></script><fb:like href="" send="false" layout="button_count" show_faces="false" font=""></fb:like></li>
             </menu>
             <h1>Palette</h1>
             <menu id="palate">
@@ -141,5 +153,17 @@
                 <div id="tl"></div>
             </div>
         </div>
+        <div id="start-panel">
+            <menu id="difficulty-menu">
+                <li><a href="#" data-difficulty="1">Easy</a></li>
+                <li><a href="#" data-difficulty="2">Medium</a></li>
+                <li><a href="#" data-difficulty="3">Hard</a></li>
+            </menu>
+            <div id="instructions">
+                <h2>Instructions</h2>
+                Guide the laser to its output. Use the mirrors, prisms, and filters given
+                on the right. Right click a mirror to delete, click to rotate.
+            <div>
+        <div>
     </body>
 </html>
