@@ -143,11 +143,9 @@ class Plot
     
 UI =
   zoomLevel : 1 # between 0 and 1 with 1 being max zoom level and 0.25 being 4x further away
-  topLeft   : [0, 0]
-  bottomRight : [0, 0]
   plots     : []
   tool      : false
-  worldDims : [2500, 2500]
+  dims      : [0, 0]
   localPlot : false
   localDiv  : false
   sprintTime: false
@@ -161,10 +159,9 @@ UI =
         e.find("span").text(@localPlot.manager.remainingEntities(name))
     
   draw : ->
-    for row in @plots when row
-      for plot in row when plot
-        plot.drawTiles()
-        plot.drawEntities()
+    for plot in @plots when plot
+      plot.drawTiles()
+      plot.drawEntities()
   
   updateSprintStatus : =>
     return unless typeof @sprintTime == 'number'
@@ -176,7 +173,6 @@ UI =
       $("#sprintText").text("until next sprint")
 
   showStartDialog : -> $("#start-panel").show()
-    
   hideStartDialog : -> $("#start-panel").hide()
 
   installHandlers : ->
@@ -185,11 +181,11 @@ UI =
       
     $(document).bind 'contextmenu', -> false
     
-    wall = $.infinitedrag("#map", {}, {
-      width: 500,
-      height: 500,
-      range_col: [-2, 2] # UPDATE ME AS APPROPRAITE
-      range_row: [-2, 2]
+    @nav = $.infinitedrag("#map", {}, {
+      width: 1000,
+      height: 1000,
+      range_col: [-5, 5] # UPDATE ME AS APPROPRAITE
+      range_row: [-5, 5]
       oncreate: ->
     })
     
@@ -199,45 +195,58 @@ UI =
       false
 
     $(document).mousewheel (e, delta) =>
+
+      prev = @zoomLevel
       if delta > 0
         @zoomLevel *= 1.15
       else
         @zoomLevel /= 1.15
-      
-      @zoomLevel = Math.max(0.1, Math.min(1, @zoomLevel))
-      
+        
+      @zoomLevel = Math.max(0.1, Math.min(1, @zoomLevel)) 
       if @zoomLevel < 0.5
         $("header").fadeOut()
       else
         $("header").fadeIn()
         
+      d = @nav.draggable()
+      o = d.offset()
+      o.top *= @zoomLevel/prev
+      o.left *= @zoomLevel/prev
+      d.offset(o)
+        
       $("canvas").attr width: 500*@zoomLevel, height: 500*@zoomLevel
-      for row in @plots when row
-        for plot in row when plot
-          plot.resize()
-          d = 500 * @zoomLevel
-          $(plot.front).parent().css left: "#{d*plot.manager.gridX}px", top: "#{d*plot.manager.gridY}px"
-      
+      for plot in @plots when plot
+        plot.resize()
+        d = 500 * @zoomLevel
+        $(plot.front).parent().css left: "#{Math.round(d*plot.manager.gridX)}px", top: "#{Math.round(d*plot.manager.gridY)}px"
+
       @draw()
       
-    $("#give-up").click ->
-      @showStartDialog()
+    $("#give-up").click => @showStartDialog()
       
     $("#palate li").click ->
       UI.tool = $(this).data("tool")
       $("#palate li").removeClass("selected")
       $(this).addClass("selected")
   
-  scrollTo : ($e) ->
-    $f = $("#wrapper")
+  scrollTo : ($e) ->    
     offset = $e.offset()
-    offput = $f.offset()
-    dx = (offset.left - offput.left + $("body").width()*0.5) / ($f.width())
-    dy = (offset.top - offput.top + $("body").height()*0.5) / ($f.height())
-    console.log "Scroll", [offset.left, offset.top], [offput.left, offput.top], [dx, dy]
-    @nav.setValue(dx, dy)
+    
+    centerX = $("body").width()  / 2
+    centerY = $("body").height() / 2
+
+    idealX = centerX - $e.width()/2
+    idealY = centerY - $e.height()/2
+    
+    dx = offset.left - idealX
+    dy = offset.top  - idealY
+    
+    dragOff = UI.nav.draggable().offset()
+    dragOff.left -= dx
+    dragOff.top  -= dy
+    UI.nav.draggable().offset(dragOff)
   
-  addPlot : (manager, interactive = false) ->
+  addPlot : (manager, mine = false) ->
     $div = $("<div/>").addClass("plot").appendTo($("#map"))
     for cls in ['bg', 'mg', 'fg']
       $div.append $("<canvas/>").attr(width: 500, height: 500).addClass("#{cls}")
@@ -248,8 +257,8 @@ UI =
     
     p = new Plot(manager, fg, mg, bg)
     
-    if interactive
-      @localDiv.unbind().removeClass("local") if @localPlot
+    if mine
+      @localDiv.unbind().removeClass("local") if @localDiv
       @localDiv = $div.addClass("local")
       @localPlot = p
       $div.mousemove (e) -> p.hoverHandler(e) or true
@@ -257,10 +266,10 @@ UI =
       $div.mouseout  (e) -> p.clearLast()     or true
       @updateRemainingEntities()
     
-    if old = @plots[manager.gridX]?[manager.gridY]
+    if old = @plots[manager.id]
       $(old.front).parent().remove()
     
-    (@plots[manager.gridX] ?= [])[manager.gridY] = p
+    @plots[manager.id] = p
 
     #testing stuff
     p.manager.addEntity(new Mirror([5,5], Constants.EntityOrient.NE))
@@ -271,16 +280,12 @@ UI =
     p.manager.addEntity(start)
     p.manager.addLaser(laser)
 
+    
     p.drawTiles()
     p.drawEntities()
-    @bottomRight = [Math.max(@bottomRight[0], p.size*(1+manager.gridX)),
-                    Math.max(@bottomRight[1], p.size*(1+manager.gridY))]
     
-    css = 
-      top: "-#{@bottomRight[1]}px"
-      left: "-#{@bottomRight[0]}px"
-      width: "#{2*@bottomRight[0]}px"
-      height: "#{2*@bottomRight[1]}px"
-    #$("#wrapper").css(css)
+    @dims = [Math.max(@dims[0], 1+manager.gridX),
+             Math.max(@dims[1], 1+manager.gridY)]
                       
     $div.css left: "#{p.size*manager.gridX}px", top: "#{p.size*manager.gridY}px"
+    @scrollTo(@localDiv) if mine

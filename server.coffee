@@ -79,6 +79,7 @@ everyone.now.requestPlot = (difficulty) ->
   userPlot @user, gm
 
 everyone.now.entityAdded = (entity)->
+  console.log "entity added " + entity.type
   [x,y] = entity.position
 
   type = Constants.RevEntityType[entity.type]
