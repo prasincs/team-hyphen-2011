@@ -129,7 +129,7 @@ class Plot
     @lastMouseMove = [x,y] = @coordsToSquare e
         
     @fp.strokeStyle = '#00ff00' # ugly color for debugging
-    @fp.strokeRect x*@scale+2, y*@scale+2, @scale-4, @scale-4
+    @fp.strokeRect x*@scale+1, y*@scale+1, @scale-4, @scale-4
     
     # display tool
     if !@manager.getEntityAt(x, y) and UI.tool
@@ -216,9 +216,9 @@ UI =
       oncreate: ->
     })
     
-    $("#difficulty-menu a").click ->
+    $("#start-playing").click ->
       UI.hideStartDialog()
-      now.requestPlot($(this).data("difficulty")) # now loading....
+      now.requestPlot('easy') # now loading....
       false
 
     $(document).mousewheel (e, delta) =>
