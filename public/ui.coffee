@@ -34,8 +34,12 @@ class Plot
     @pen = @mp
     @pen.clearRect 0, 0, @size, @size
     @drawQueue = []
-    for laser in @manager.board.lasers
+  
+    for laser in @manager.board.lasers when laser.color is 'blue'
       @laser laser
+    for laser in @manager.board.lasers when laser.color is 'red'
+      @laser laser
+      
     for x in [0..9]
       for y in [0..9]
         if e = @manager.getEntityAt(x, y)
@@ -55,7 +59,7 @@ class Plot
 
       length = Math.min(length*@scale, 500)
 
-      i = ImageManager.get("laser-long-red")
+      i = ImageManager.get("laser-long-#{e.color}")
       z = UI.zoom() / 500
       @pen.drawImage(i, 0, 0, length, 25, 0, -12.5*z, length, 25*z)
       @pen.restore()
@@ -68,11 +72,10 @@ class Plot
       [sx, sy] = segment.start.position
       if segment.start.type is Constants.EntityType.START
         l = if segment.end?.position then len(segment.end.position) + 1 else 11
-        t = switch segment.direction
-          when Constants.LaserDirection.N then [ 0.5,  0.5]
-          when Constants.LaserDirection.S then [ 0.5, -0.5]
-          when Constants.LaserDirection.W then [ 0.5,  0.5]
-          when Constants.LaserDirection.E then [-0.5,  0.5]
+        t = [0.5, 0.5]
+        switch segment.direction
+          when Constants.LaserDirection.S then t[1] = -0.5
+          when Constants.LaserDirection.E then t[0] = -0.5
         lilLaser(angle, l, t)
       else if segment.end and segment.end.type isnt Constants.EntityType.END
         l = len(segment.end.position)
@@ -171,7 +174,7 @@ UI =
   
   updateRemainingEntities : ->
     if @localDiv
-      for e in $("#palate li")
+      for e in $("#palette li")
         e = $(e)
         name = Constants.EntityType[e.data("tool").toUpperCase()]
         e.find("span").text(@localPlot.manager.remainingEntities(name))
@@ -301,6 +304,7 @@ UI =
     
     
     #testing stuff
+    """
     p.manager.addEntity(new Mirror([5,5], Constants.EntityOrient.NE))
     p.manager.addEntity(new Endpoint([5,0]))
     start = new Startpoint([0,5], Constants.LaserDirection.E)
@@ -308,6 +312,7 @@ UI =
 
     p.manager.addEntity(start)
     p.manager.addLaser(laser)
+    """
 
     p.drawTiles()
     p.drawEntities()
