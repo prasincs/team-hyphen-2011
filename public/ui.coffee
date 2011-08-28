@@ -92,22 +92,15 @@ class Plot
 
   block : (e) ->
     [x,y] = e.position
-    @pen.fillStyle = "#000000"
-    @pen.fillRect x*@scale + 4, y*@scale + 4, @scale - 8, @scale - 8
+    @drawImage "block", x, y
     
   mirror : (e) ->
     [x, y] = e.position
-    
-    @pen.strokeStyle = e.color || "#000000"
-    @pen.beginPath()
-    if e.orientation % 2 == 1 # NW
-      @pen.moveTo(x*@scale + 4, y*@scale + 4)
-      @pen.lineTo((x+1)*@scale - 4, (y+1)*@scale - 4)
-    else
-      @pen.moveTo((x+1)*@scale - 4, y*@scale + 4)
-      @pen.lineTo(x*@scale + 4, (y+1)*@scale - 4)
-    @pen.closePath()
-    @pen.stroke()
+    @pen.save()
+    @pen.translate((x+0.5) * @scale, (y+0.5) * @scale)
+    @pen.rotate(Math.PI/2 * (e.orientation-1))
+    @drawImage "mirror", -0.5, -0.5
+    @pen.restore()
   
   prism : (e) ->
     [x,y] = e.position
