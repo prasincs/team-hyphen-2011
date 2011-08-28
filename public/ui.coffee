@@ -55,7 +55,7 @@ class Plot
 
       length = Math.min(length*@scale, 500)
 
-      i = ImageManager.get("laser-long")
+      i = ImageManager.get("laser-long-red")
       z = UI.zoom() / 500
       @pen.drawImage(i, 0, 0, length, 25, 0, -12.5*z, length, 25*z)
       @pen.restore()
