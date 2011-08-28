@@ -271,4 +271,3 @@
 		update_containment();
 	};
 })(jQuery);
-YesNo (4)

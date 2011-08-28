@@ -158,19 +158,28 @@ UI =
     else
       $("#sprintTimer").text(Math.round((@sprintTime + Date.now())/-1000))
       $("#sprintText").text("until next sprint")
-  
+
+  showStartDialog : -> $("#start-panel").show()
+    
+  hideStartDialog : -> $("#start-panel").hide()
+
   installHandlers : ->
     
     setInterval @updateSprintStatus, 1000
       
     $(document).bind 'contextmenu', -> false
     
-    wall = $.infinitedrag("#map", {}, {width: 500, height: 500, oncreate: ($e) -> })
-    #$("#map").draggable({scroll: false})
+    wall = $.infinitedrag("#map", {}, {
+      width: 500,
+      height: 500,
+      range_col: [-2, 2] # UPDATE ME AS APPROPRAITE
+      range_row: [-2, 2]
+      oncreate: ->
+    })
     
     $("#difficulty-menu a").click ->
-      $("#start-panel").hide()
-      now.requestPlot(parseInt($(this).data("difficulty"))) # now loading....
+      UI.hideStartDialog()
+      now.requestPlot($(this).data("difficulty")) # now loading....
       false
 
     $(document).mousewheel (e, delta) =>
@@ -196,7 +205,7 @@ UI =
       @draw()
       
     $("#give-up").click ->
-      $("#start-panel").show()
+      @showStartDialog()
       
     $("#palate li").click ->
       UI.tool = $(this).data("tool")

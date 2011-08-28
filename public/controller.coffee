@@ -28,7 +28,7 @@ $ ->
     unimplemented
   
   now.puzzleCompleted = ->
-    $("#start-panel").show()
+    UI.showStartDialog()
     
   now.startSprint = (timeLeft) ->
     UI.sprintTime = Date.now() + timeLeft
