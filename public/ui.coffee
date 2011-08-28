@@ -268,7 +268,7 @@ UI =
                    @bottomRight[0] * @zoom(),
                    @bottomRight[1] * @zoom()]
     
-  scrollTo : ($e) ->    
+  scrollTo : ($e) ->
     offset = $e.offset()
     
     centerX = $("body").width()  / 2
