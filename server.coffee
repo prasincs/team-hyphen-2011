@@ -68,7 +68,7 @@ getNewPlot = ->
 
 everyone.now.requestPlot = (difficulty) ->
   [x,y] = getNewPlot()
-  puzzle = generator.serialize
+  puzzle = new Puzzle(10, generator.serialize())
   #puzzle = new Puzzle(10)
   gm = new GameManager lastPlotId, puzzle, x ,y
   everyone.now.startPlot lastPlotId , [x, y], puzzle, @user.clientId
