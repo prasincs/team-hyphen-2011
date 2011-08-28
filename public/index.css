@@ -88,7 +88,6 @@ header {
     #start-panel > div {
     }
 canvas {
-    border: 10px solid blue;
 }
     
 ._tile { background: transparent; border: 1px solid #000 }

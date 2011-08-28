@@ -23,10 +23,10 @@ class Plot
     @scale = @size / 10.0
   
   drawTiles : ->
-    @bp.fillStyle = '#222'
+    @bp.fillStyle = '#ddd'
     @bp.fillRect 0, 0, @size, @size
     
-    @bp.fillStyle = '#111'
+    @bp.fillStyle = '#eee'
     for x in [0..10]
       for y in [x%2..10] by 2
         @bp.fillRect x*@scale, y*@scale, @scale, @scale
@@ -54,9 +54,11 @@ class Plot
       @pen.translate((sx+t[0])*@scale, (sy+t[1])*@scale)
       @pen.rotate(angle)
 
+      length = Math.min(length*@scale, 500)
+
       i = ImageManager.get("laser-long")
       z = UI.zoomLevel
-      @pen.drawImage(i, 0, 0, length*@scale, 25, 0, -12.5*z, length*@scale, 25*z)
+      @pen.drawImage(i, 0, 0, length, 25, 0, -12.5*z, length, 25*z)
       @pen.restore()
     
     len = ([ex, ey]) ->
@@ -66,14 +68,15 @@ class Plot
       angle = (segment.direction-1) * Math.PI/2
       [sx, sy] = segment.start.position
       if segment.start.type is Constants.EntityType.START
+        l = if segment.end?.position then len(segment.end.position) + 1 else 11
         t = switch segment.direction
           when Constants.LaserDirection.N then [ 0.5,  0.5]
           when Constants.LaserDirection.S then [ 0.5, -0.5]
           when Constants.LaserDirection.W then [ 0.5,  0.5]
           when Constants.LaserDirection.E then [-0.5,  0.5]
-        lilLaser(angle, len(segment.end.position) + 1, t)
-      else if segment.end
-        l = len(segment.end.position) + 0.5
+        lilLaser(angle, l, t)
+      else if segment.end and segment.end.type isnt Constants.EntityType.END
+        l = len(segment.end.position)
         t = [0.5, 0.5]
         lilLaser(angle, l)
       else if not segment.end or segment.end.type is Constants.EntityType.END
@@ -226,7 +229,7 @@ UI =
       else
         @zoomLevel /= 1.15
         
-      @zoomLevel = Math.max(0.1, Math.min(1, @zoomLevel))
+      @zoomLevel = Math.max(0.1, Math.min(1, @zoomLevel)) 
       
       # < 1 if zoomed in
       d = @nav.draggable()                  # pretend going from 1 to 0.75
@@ -261,8 +264,7 @@ UI =
   scrollTo : ($e) ->    
     offset = $e.offset()
     
-    # the right 250px of the screen is the sidebar
-    centerX = ($("body").width() - 250)  / 2
+    centerX = $("body").width()  / 2
     centerY = $("body").height() / 2
 
     idealX = centerX - $e.width()/2
