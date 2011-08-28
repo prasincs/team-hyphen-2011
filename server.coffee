@@ -68,18 +68,17 @@ getNewPlot = ->
 
 everyone.now.requestPlot = (difficulty) ->
   [x,y] = getNewPlot()
-  console.log x, y
   puzzle = new Puzzle(10)
-  #idMap[@user.clientId] = {
-  #  clientId:   @user.clientId,
-  #  difficulty: difficulty
-  #}
   gm = new GameManager lastPlotId, puzzle, x ,y
   everyone.now.startPlot lastPlotId , [x, y], puzzle, @user.clientId
   lastPlotId+=1;
   userPlot @user, gm
 
 
+everyone.now.requestNeighborPlots = (id)->
+  for clientId, gm of plots
+    if  clientId != @user.clientId
+      everyone.now.drawPlot gm.id, [gm.gridX, gm.gridY], gm.puzzle, clientId
 
 
 everyone.now.entityAdded = (entity)->
@@ -89,10 +88,8 @@ everyone.now.entityAdded = (entity)->
   type = Constants.RevEntityType[entity.type]
   et = new Game[type](entity.position, entity.orientation, entity.mobility)
   
-  console.log(et.constructor.name)
 
   plot = userPlot @user
-  console.log plot
   everyone.now.addEntity plot.id, et
 
 everyone.now.entityRemoved = (x, y) ->
