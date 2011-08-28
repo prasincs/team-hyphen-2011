@@ -316,6 +316,7 @@ serialize = (puzzle=false) =>
     greenEdge = [puzzle.green.start,puzzle.green.ends[0]]
     [elems,redEdge,greenEdge]
 
+#serialize(p)
 console.log(serialize(p))
 
 exports ?= {}
