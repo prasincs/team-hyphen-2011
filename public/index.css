@@ -16,7 +16,6 @@ body {
     top        : 0;
     left       : 0;
     cursor: pointer !important;
-    
 }
 .fg { z-index: 12; }
 .local .fg {background: rgba(100,255,100,0.1);}
@@ -29,6 +28,7 @@ body {
     height: 500px;
     margin: 0; padding: 0; border: none;
     position: absolute;
+    border: 5px solid #000;
 }
 
 header {
@@ -73,6 +73,7 @@ header {
     margin: 0; padding: 0;
     overflow: hidden;
     position: absolute;
+    background: #000;
 }
     #tl {
     }
@@ -90,4 +91,4 @@ header {
 canvas {
 }
     
-._tile { background: transparent; border: 1px solid #000 }
+._tile { background: transparent; }
