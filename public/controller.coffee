@@ -30,10 +30,10 @@ $ ->
   now.addEntity = (plotId, e) ->
     if (plot = notMyPlot(plotId))
       if Constants.EntityType.MIRROR == e.type
-        plot.addEntity(new Mirror(e.position, e.orientation, true))
+        plot.manager.addEntity(new Mirror(e.position, e.orientation, true))
       else
-        plot.addEntity(new Filter(e.position, e.orientation, e.color, true))
-      plot.draw()
+        plot.manager.addEntity(new Filter(e.position, e.orientation, e.color, true))
+      plot.drawEntities()
   
   now.removeEntity = (plot, x, y) ->
     notMyPlot(plot)?.removeEntityAt(x,y)

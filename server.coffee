@@ -26,14 +26,81 @@ everyone = nowjs.initialize(server) #, {socketio: {'log level': 1}})
 lastPlotId = 1
 idMap = {}
 plots = {}
-lastPlot = [10,10] #get from database
+
+
+plotId = 1
+initPlot = [10,10]
 usedPlots = {}
+plotIdToCoord = []
+usedPlotQ = []
+
+getPlot = (x,y)->
+  usedPlots[x + ","+y]
 
 isPlotAssigned = (x,y)->
-  usedPlots[x+","+y]
+  getPlot(x,y)
+
+plotNeighbors = (x,y)->
+  neighbors = {}
+  count = 0
+  if isPlotAssigned(x-1, y)
+    neighbors["E"]= [x-1,y]
+    count +=1
+  if isPlotAssigned(x+1, y)
+    neighbors["W"] = [x+1, y]
+    count +=1
+  if isPlotAssigned(x, y-1)
+    neighbors["N"] = [x, y-1]
+    count +=1
+  if isPlotAssigned(x, y+1)
+    neighbors["S"] = [x, y+1]
+    count +=1
+  neighbors.count = count
+  neighbors
+
+updatePlotNeighbors = (x,y)->
+  plot = getPlot(x,y)
+  plot.neighbors = plotNeighbors(x,y)
+  plot.openSides =  4 - plot.neighbors.count
 
 assignPlot = (x,y, u)->
-  usedPlots[x+","+y] = u.clientId #get from database
+  neighbors = plotNeighbors(x,y)
+  usedPlots[x+","+y] = {
+    plotId: plotId,
+    loc: [x,y],
+    clientId: u.clientId,
+    neighbors: neighbors
+    openSides: 4 - neighbors.count
+  }
+  plotIdToCoord[plotId] = x+","+y
+  usedPlotQ.push(plotId)
+  usedPlotQ.sort (id1,id2) ->
+    usedPlots[plotIdToCoord[id1]].openSides - usedPlots[plotIdToCoord[id2]].openSides
+  # remove all the ones with sides filled already
+  while usedPlots[plotIdToCoord[usedPlotQ[0]]].openSides == 0
+      usedPlotQ.shift()
+  plotId++
+  delete neighbors.count
+  for dir, coord of neighbors
+    [x,y] = coord
+    updatePlotNeighbors(x,y)
+
+getCrowdedPlotId = ->
+  usedPlotQ[0]
+
+getEmptyNeighborCoord = (id)->
+  plot = usedPlots[plotIdToCoord[id]]
+  [x,y] = plot.loc
+  neighbors = plot.neighbors
+  # could be done a bit smartly with more stuff
+  if not neighbors["E"]
+    [x-1,y]
+  else if not neighbors["W"]
+    [x+1,y]
+  else if not neighbors["N"]
+    [x, y-1]
+  else if not neighbors["S"]
+    [x, y+1]
 
 userPlot = (u, assign = false) ->
   if assign
@@ -41,37 +108,24 @@ userPlot = (u, assign = false) ->
   plots[u.clientId] = assign if assign
   plots[u.clientId]
 
-
-
 getNewPlot = ->
-  plot = lastPlot
-  while lastPlot == plot
-    direction = Math.floor(Math.random()*4)+1
-    [x,y] = plot
-    switch direction
-      when Constants.LaserDirection.N
-        y= y+1
-      when Constants.LaserDirection.S
-        y= y-1
-      when Constants.LaserDirection.W
-        x= x+1
-      when Constants.LaserDirection.E
-        x = x-1
-    if not isPlotAssigned x,y
-      lastPlot = [x,y]
-      break
-    else
-      nextDir = Math.floor(Math.random()*4+1)
-      plot = [x+nextDir, y+nextDir]
-  lastPlot
+  plot = []
+  if plotId == 1
+    plot = initPlot
+  else
+    crowdedPlotId = getCrowdedPlotId()
+    plot = usedPlots[plotIdToCoord[crowdedPlotId]]
+    plot = getEmptyNeighborCoord(crowdedPlotId)
+  plot
+
 
 
 everyone.now.requestPlot = (difficulty) ->
   [x,y] = getNewPlot()
   puzzle = new Puzzle(10, generator.serialize())
   gm = new GameManager lastPlotId, puzzle, x ,y
-  everyone.now.startPlot lastPlotId , [x, y], puzzle, @user.clientId
-  lastPlotId+=1
+  everyone.now.startPlot plotId , [x, y], puzzle, @user.clientId
+  assignPlot x,y, @user
   userPlot @user, gm
 
 

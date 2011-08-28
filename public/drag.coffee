@@ -43,6 +43,7 @@ $ ->
           return true unless @panning
           @cover = $("<div/>").css(@css).appendTo($("body"))
           @cover.bind 'mousemove.drag', (e) =>
+            @cover?.unbind().remove() unless @panning
             xp = e.pageX - @panStart[0]
             yp = e.pageY - @panStart[1]
             x = Math.max(lb, Math.min(xp, rb))
