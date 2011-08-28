@@ -1,6 +1,8 @@
+debug = false
+
 Assert = {}
 Assert.error = (msg) ->
-    console.trace()
+    console.trace() if debug
     throw ("ASSERT FAILED: " + msg)
 Assert.equals = (a,b,msg) -> Assert.error(msg) unless a is b
 Assert.false  = (expr,msg) -> Assert.equals(expr,false,msg)
@@ -95,7 +97,7 @@ class Color
     constructor: (@color,@parent,endCount=1) ->
         @pickStartpoint()
         @solutionPoints = []
-        @excludedEnds = []
+        @excludedEnds = [].concat(@parent.redEdges.concat(@parent.greenEdges))
         @usedPoints = []
         @mirrors = []
         @addEndpoint() for i in [0...endCount]
@@ -116,14 +118,37 @@ class Color
     pickEdgepoint: (excluded=[]) ->
         done = false
         until done
-            dir = ['h','v'][Rand.int(1)]
-            coord1 = [-1,@parent.size][Rand.int(1)]
-            coord2 = Rand.int(@parent.size-1)
-            pt = switch dir
-                when 'h' then new Pt1(coord1,coord2,dir,edge=true)
-                when 'v' then new Pt1(coord2,coord1,dir,edge=true)
-                else Assert.error("dir should be one of 'h' or 'v' (pickEdgepoint)")
-            if (ex for ex in excluded when pt.check(ex)).length is 0 then done = true
+            needed = if @color is 'red' then @parent.redEdges else @parent.greenEdges
+            if needed.length > 0
+                [x,y,dir] = needed.shift()
+                pt = new Pt1(x,y,dir,edge=true)
+                done = true
+            else
+                open = (k for k,v of @parent.isOpen when v)
+                [s,n,e,w] = ['s' in open, 'n' in open, 'e' in open, 'w' in open]
+                if (n or s) and (e or w)
+                    dir = ['h','v'][Rand.int(1)]
+                    coord1 = [-1,@parent.size][Rand.int(1)]
+                else if n or s
+                    dir = 'v'
+                    if n and s then coord1 = [-1,@parent.size][Rand.int(1)]
+                    else if n then coord1 = -1
+                    else if s then coord1 = @parent.size
+                    else Assert.error("illegal state(1)")
+                else if e or w
+                    dir = 'h'
+                    if e and w then coord1 = [-1,@parent.size][Rand.int(1)]
+                    else if e then coord1 = -1
+                    else if w then coord1 = @parent.size
+                    else Assert.error("illegal state(2)")
+                else Assert.error("at least one direction must be open: #{@parent.isOpen}")
+                coord2 = Rand.int(@parent.size-1)
+                console.log(": #{coord1} #{coord2} #{dir}")
+                pt = switch dir
+                    when 'h' then new Pt1(coord1,coord2,dir,edge=true)
+                    when 'v' then new Pt1(coord2,coord1,dir,edge=true)
+                    else Assert.error("dir should be one of 'h' or 'v' (pickEdgepoint)")
+                if (ex for ex in excluded when pt.check(ex)).length is 0 then done = true
         pt
     # gets a list of points in a line from start to end (inclusive of end points)
     getLine: (start,end) ->
@@ -210,7 +235,27 @@ class Color
             @makePath(count-1,prev=point)
 
 class PuzzleObj
-    constructor: (@count=4,@size=10,@start=false,@end=false,@difficulty='easy') ->
+    constructor: (points=false,@count=4,@size=10,@start=false,@end=false,@difficulty='easy') ->
+        @isOpen = {n:true,e:true,s:true,w:true}
+        @redEdges = []
+        @greenEdges = []
+        if points
+            for [x,y,dir,color] in points
+                Assert.exists(color,"invalid edge points format!")
+                @isOpen[dir] = false
+                switch dir
+                    when 'n' then y += @size + 1
+                    when 'e' then x += @size + 1
+                    when 's' then y -= @size + 1
+                    when 'w' then x -= @size + 1
+                    else Assert.error("invalid direction")
+                if (-1 <= x <= @size and 0 <= y <= @size-1) or
+                   (0 <= x <= @size-1 and -1 <= y <= @size)
+                    dir = if x is -1 or x is @size then 'h' else 'v'
+                    if color is 'red'
+                        @redEdges.push([x,y,dir])
+                    else
+                        @greenEdges.push([x,y,dir])
         @red   = new Color('red'  ,this)
         @red.make(@count)
         @green = new Color('green',this)
@@ -287,19 +332,20 @@ translationTable = {
 
     #[ 100 char string, [[x,y],[x,y]], [[x,y],[x,y]] ]
 
-getPuzzleSafe = ->
+getPuzzleSafe = (points=false) ->
     unsafe = true
     while unsafe
         try
-            p = new PuzzleObj()
+            if points then p = new PuzzleObj(points) else p = new PuzzleObj()
             unsafe = false
         catch e
-            unsafe = true
+            unsafe =false 
     p
 
-serialize = (puzzle=false) ->
+serialize = (points=false,puzzle=false) ->
+    puzzleSet = puzzle isnt false
     try
-        puzzle ||= getPuzzleSafe()
+        puzzle ||= getPuzzleSafe(points)
             
         elems = ('.' for i in [0...puzzle.size*puzzle.size])
         for obj in puzzle.static
@@ -319,17 +365,17 @@ serialize = (puzzle=false) ->
                             switch obj.orientation
                                 when 'nw','se' then 'r'
                                 when 'ne','sw' then 'R'
-            pos = obj.x + obj.y*10
+            pos = obj.x*10 + obj.y
             elems[pos] = val
-        redEdge   = [[puzzle.red.start.y    , puzzle.red.start.x],
-                     [puzzle.red.ends[0].y  ,puzzle.red.ends[0].x]]
-        greenEdge = [[puzzle.green.start.y  ,puzzle.green.start.x],
-                     [puzzle.green.ends[0].y,puzzle.green.ends[0].x]]
+        redEdge   = [[puzzle.red.start.    x, puzzle.red.start.   y],
+                     [puzzle.red.ends[0].  x,puzzle.red.ends[0].  y]]
+        greenEdge = [[puzzle.green.start.  x,puzzle.green.start.  y],
+                     [puzzle.green.ends[0].x,puzzle.green.ends[0].y]]
         [elems,redEdge,greenEdge]
     catch e
-        console.log("error generating + serializing puzzle, trying again")
+        console.log("error generating + serializing puzzle, trying again:\n\t#{e}\n")
         # try again...
-        serialize(puzzle)
+        serialize(points=points,if puzzleSet then puzzle else false)
 
 exports ?= {}
 exports.serialize = serialize
