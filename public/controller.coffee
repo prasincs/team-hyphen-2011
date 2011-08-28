@@ -17,7 +17,6 @@ $ ->
     reconstitute new Puzzle(1), puzzle
     manager = new GameManager(id, puzzle, x, y)
     manager.deserializePuzzle()
-
     UI.addPlot manager, now.core.clientId == clientId
     now.requestNeighborPlots id
     UI.draw()
