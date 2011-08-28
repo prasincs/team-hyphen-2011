@@ -23,10 +23,10 @@ class Plot
     @scale = @size / 10.0
   
   drawTiles : ->
-    @bp.fillStyle = '#222'
+    @bp.fillStyle = '#ddd'
     @bp.fillRect 0, 0, @size, @size
     
-    @bp.fillStyle = '#111'
+    @bp.fillStyle = '#eee'
     for x in [0..10]
       for y in [x%2..10] by 2
         @bp.fillRect x*@scale, y*@scale, @scale, @scale
@@ -229,7 +229,7 @@ UI =
       else
         @zoomLevel /= 1.15
         
-      @zoomLevel = Math.max(0.1, Math.min(1, @zoomLevel))
+      @zoomLevel = Math.max(0.1, Math.min(1, @zoomLevel)) 
       
       # < 1 if zoomed in
       d = @nav.draggable()                  # pretend going from 1 to 0.75
@@ -264,8 +264,7 @@ UI =
   scrollTo : ($e) ->    
     offset = $e.offset()
     
-    # the right 250px of the screen is the sidebar
-    centerX = ($("body").width() - 250)  / 2
+    centerX = $("body").width()  / 2
     centerY = $("body").height() / 2
 
     idealX = centerX - $e.width()/2
