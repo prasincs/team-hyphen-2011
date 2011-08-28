@@ -17,16 +17,15 @@ class Plot
     @drawQueue = []
     @resize()
     
-    
   resize : ->
     @size  = @front.height
     @scale = @size / 10.0
   
   drawTiles : ->
-    @bp.fillStyle = '#ddd'
+    @bp.fillStyle = '#222'
     @bp.fillRect 0, 0, @size, @size
     
-    @bp.fillStyle = '#eee'
+    @bp.fillStyle = '#111'
     for x in [0..10]
       for y in [x%2..10] by 2
         @bp.fillRect x*@scale, y*@scale, @scale, @scale
@@ -35,12 +34,12 @@ class Plot
     @pen = @mp
     @pen.clearRect 0, 0, @size, @size
     @drawQueue = []
+    for laser in @manager.board.lasers
+      @laser laser
     for x in [0..9]
       for y in [0..9]
         if e = @manager.getEntityAt(x, y)
           @[e.constructor.name.toLowerCase()](e)
-    for laser in @manager.board.lasers
-      @laser laser
     for fn in @drawQueue
       fn.apply(this, [])
   
@@ -68,7 +67,7 @@ class Plot
       angle = (segment.direction-1) * Math.PI/2
       [sx, sy] = segment.start.position
       if segment.start.type is Constants.EntityType.START
-        l = if segment.end?.position then len(segment.end.position) + 0.76 else 11
+        l = if segment.end?.position then len(segment.end.position) + 1 else 11
         t = switch segment.direction
           when Constants.LaserDirection.N then [ 0.5,  0.5]
           when Constants.LaserDirection.S then [ 0.5, -0.5]
@@ -76,28 +75,12 @@ class Plot
           when Constants.LaserDirection.E then [-0.5,  0.5]
         lilLaser(angle, l, t)
       else if segment.end and segment.end.type isnt Constants.EntityType.END
-        l = len(segment.end.position) - 0.5
-        t = switch segment.direction
-          when Constants.LaserDirection.N then [ 0.5, 0.25]
-          when Constants.LaserDirection.S then [ 0.5, 0.75]
-          when Constants.LaserDirection.W then [ 0.25, 0.5]
-          when Constants.LaserDirection.E then [ 0.75, 0.5]
+        l = len(segment.end.position)
+        t = [0.5, 0.5]
         lilLaser(angle, l)
       else if not segment.end or segment.end.type is Constants.EntityType.END
         t = [0.5, 0.5]
         lilLaser(angle, 10)
-        
-      name = segment.end?.constructor.name
-      if name == 'Mirror' or name == 'Filter'
-        w = UI.zoom()/20
-        do (w, segment) =>
-          @drawQueue.push ->
-            @pen.save()
-            #@pen.rotate 
-            ImageManager.draw("laser-reflect-component-red", @pen,
-              (segment.end.position[0]+0.5)*@scale-w/2,
-              (segment.end.position[1]+0.5)*@scale-w/2, w, w )
-            @pen.restore()
     
 
   block : (e) ->
@@ -231,7 +214,7 @@ UI =
 
     $(document).mousewheel (e, delta) =>
       prev = @zoom() / 500.0
-      if delta > 0
+      if delta < 0
         @zoomLevel += 1 if @zoomLevel < 4
       else if @zoomLevel > 0
         @zoomLevel -= 1
