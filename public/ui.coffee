@@ -113,13 +113,19 @@ class Plot
     return if UI.zoomLevel > 1
 
     @lastMouseMove = [x,y] = @coordsToSquare e
-      
-    if !(e = @manager.getEntityAt(x,y))? or !e.static
+
+    entity = @manager.getEntityAt(x,y)
+    if !entity or !entity.static
       @fp.strokeStyle = '#00ff00' # ugly color for debugging
       @fp.strokeRect x*@scale+1, y*@scale+1, @scale-4, @scale-4
     
+    if entity and entity.static
+      $(@front).css 'cursor', 'not-allowed !important'
+    else
+      $(@front).css 'cursor', 'pointer !important'
+    
     # display tool
-    if !@manager.getEntityAt(x, y) and UI.tool
+    if !entity and UI.tool
       @pen = @fp
       switch UI.tool
         when 'Mirror'     then @mirror(new Mirror([x,y],1,true))
