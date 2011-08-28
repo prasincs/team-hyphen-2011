@@ -192,9 +192,11 @@ class GameManager
                         blocked = true
                         break
                     when Constants.EntityType.FILTER
-                        if current.color isnt laser.color
-                            blocked = true
-                            break
+                        if current.color is laser.color
+                            seg = new LaserSegment(current, null, laser, currDir)
+                            currDir = current.bounceDirection(currDir)
+                            seg.direction = currDir
+                            laser.segments.push(seg)
                         else
                             seg = new LaserSegment( current, null, laser, currDir)
                             seg.direction = currDir
@@ -441,6 +443,20 @@ class Filter extends GridEntity
         super(@position, @orientation, @static)
 
     accepts: (laser) -> laser.color == @color
+    bounceDirection: (direction) ->
+        # Tried to make this an expression, but I kept getting syntax errors
+        if @orientation is Constants.EntityOrient.NW or @orientation is Constants.EntityOrient.SE
+            if direction is Constants.LaserDirection.N or direction is Constants.LaserDirection.S
+               result = (direction + 1) % 4
+               
+            else
+               result = (((direction - 1)%4) + 4) % 4
+        else if @orientation is Constants.EntityOrient.SW or @orientation is Constants.EntityOrient.NE
+            if direction is Constants.LaserDirection.N or direction is Constants.LaserDirection.S
+                result = (((direction - 1)%4) + 4) % 4
+            else
+                result = (direction + 1) % 4
+        return result
 
 class Prism extends GridEntity
     constructor: (@position, @orientation, @static) ->
