@@ -165,7 +165,8 @@ UI =
   zoomLevel : 0
   plots     : []
   tool      : false
-  dims      : [0, 0]
+  topLeft   :  [1000000,   1000000]
+  bottomRight: [-1000000, -1000000]
   localPlot : false
   localDiv  : false
   sprintTime: false
@@ -202,13 +203,7 @@ UI =
       
     $(document).bind 'contextmenu', -> false
     
-    @nav = $.infinitedrag("#map", {}, {
-      width: 1000,
-      height: 1000,
-      range_col: [-5, 5] # UPDATE ME AS APPROPRAITE
-      range_row: [-5, 5]
-      oncreate: ->
-    })
+    @nav = $.infinitedrag("#map", [-1000, -1000, 1000, 1000])
     
     $("#difficulty-menu a").click ->
       UI.hideStartDialog()
@@ -224,7 +219,7 @@ UI =
       curr = @zoom() / 500.0  
       
       # < 1 if zoomed in
-      d = @nav.draggable()                  # pretend going from 1 to 0.75
+      d = @nav.draggable                  # pretend going from 1 to 0.75
       o = d.offset()                        # -100, -100
       centerX = e.pageX         # 1000
       centerY = e.pageY
@@ -260,7 +255,18 @@ UI =
         height:      @zoom()
       $(plot.front).parent().css(css)
     @draw()
-  
+    @updatePan()
+    
+  updatePan : ->
+    $("#handle").css({
+      width: (@bottomRight[0] - @topLeft[0]) * @zoom() * 2,
+      height: (@bottomRight[1] - @topLeft[1]) * @zoom()
+    })
+    @nav.bounds = [@topLeft[0] * @zoom(),
+                   @topLeft[1] * @zoom(),
+                   @bottomRight[0] * @zoom(),
+                   @bottomRight[1] * @zoom()]
+    
   scrollTo : ($e) ->    
     offset = $e.offset()
     
@@ -273,10 +279,10 @@ UI =
     dx = offset.left - idealX
     dy = offset.top  - idealY
     
-    dragOff = UI.nav.draggable().offset()
+    dragOff = UI.nav.draggable.offset()
     dragOff.left -= dx
     dragOff.top  -= dy
-    UI.nav.draggable().offset(dragOff)
+    UI.nav.draggable.offset(dragOff)
   
   addPlot : (manager, mine = false) ->
     $div = $("<div/>").addClass("plot").appendTo($("#map"))
@@ -317,9 +323,11 @@ UI =
     p.drawTiles()
     p.drawEntities()
     
-    @dims = [Math.max(@dims[0], 1+manager.gridX),
-             Math.max(@dims[1], 1+manager.gridY)]
-                      
+    @bottomRight = [Math.max(@bottomRight[0], 1+manager.gridX),
+                    Math.max(@bottomRight[1], 1+manager.gridY)]
+    @topLeft = [Math.min(@topLeft[0], manager.gridX),
+                Math.min(@topLeft[1], manager.gridY)]
+                       
     $div.css left: p.size*manager.gridX, top: p.size*manager.gridY
     @resizePlots()
     @scrollTo(@localDiv) if mine

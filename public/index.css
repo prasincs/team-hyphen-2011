@@ -74,7 +74,8 @@ header {
     position: absolute;
     background: #000;
 }
-    #tl {
+    #handle {
+      position: absolute;
     }
 
 #start-panel {
