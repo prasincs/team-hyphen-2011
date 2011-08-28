@@ -45,16 +45,29 @@ class Plot
   laser : (e) ->
     for segment in e.segments
       [sx, sy] = segment.start.position
-      
-      if segment.end
+
+      if segment.start.type is Constants.EntityType.START
         [ex, ey] = segment.end.position
-      else
+        [sx, sy] = switch segment.direction
+          when Constants.LaserDirection.N then [sx + 0.5, sy + 0.5]
+          when Constants.LaserDirection.S then [sx + 0.5, sy - 0.5]
+          when Constants.LaserDirection.W then [sx + 0.5, sy + 0.5]
+          when Constants.LaserDirection.E then [sx - 0.5, sy + 0.5]
+        @pen.moveTo(sx*@scale, sy*@scale)
+        @pen.lineTo((ex+0.5)*@scale, (ey+0.5)*@scale)
+      else if segment.end
+        [ex, ey] = segment.end.position
+        @pen.moveTo((sx+0.5)*@scale, (sy+0.5)*@scale)
+        @pen.lineTo((ex+0.5)*@scale, (ey+0.5)*@scale)
+      else if not segment.end or segment.end.type is Constants.EntityType.END
         [ex, ey] = switch segment.direction
-          when Constants.LaserDirection.N then [segment.start.position[0], 0]
-          when Constants.LaserDirection.S then [segment.start.position[0], 9]
-          when Constants.LaserDirection.W then [0, segment.start.position[1]]
-          when Constants.LaserDirection.E then [9, segment.start.position[1]]
-      # draw path here
+          when Constants.LaserDirection.N then [segment.start.position[0] + 0.5, -1]
+          when Constants.LaserDirection.S then [segment.start.position[0] + 0.5, 10]
+          when Constants.LaserDirection.W then [-1, segment.start.position[1] + 0.5]
+          when Constants.LaserDirection.E then [10, segment.start.position[1] + 0.5]
+        @pen.moveTo((sx+0.5)*@scale, (sy+0.5)*@scale)
+        @pen.lineTo(ex*@scale, ey*@scale)
+
     
 
   block : (e) ->
@@ -279,8 +292,19 @@ UI =
     console.log("manager-id "+ manager.id)
     @plots[manager.id || 1] = p
     
+    #testing stuff
+    """
+    p.manager.addEntity(new Mirror([5,5], Constants.EntityOrient.NE))
+    p.manager.addEntity(new Endpoint([5,0]))
+    start = new Startpoint([0,5], Constants.LaserDirection.E)
+    laser = new Laser('#F00', start)
+
+    p.manager.addEntity(start)
+    p.manager.addLaser(laser)
+
     p.drawTiles()
     p.drawEntities()
+    """
     
     @dims = [Math.max(@dims[0], 1+manager.gridX),
              Math.max(@dims[1], 1+manager.gridY)]

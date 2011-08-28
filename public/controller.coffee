@@ -6,14 +6,14 @@ $ ->
   reconstitute = (blank, data) -> data.__proto__ = blank
   
   notMyPlot = (plotId) ->
-    console.log plotId , "<-- plotId"
-    console.log UI.plots
     plot = UI.plots[plotId]
     plot
   
   now = window.now ?= {}
 
-  now.startPlot = (id, [x, y], puzzle, clientId) ->
+  now.startPlot = (id, coords, puzzle, clientId) ->
+    x = coords[0]
+    y = coords[1]
     reconstitute new Puzzle(1), puzzle
     UI.addPlot new GameManager(id, puzzle, x, y), now.core.clientId == clientId
     now.requestNeighborPlots id
@@ -25,7 +25,6 @@ $ ->
 
   
   now.addEntity = (plotId, e) ->
-    console.log plotId, UI.localPlot.manager.id
     switch e.type
       when Constants.EntityType.MIRROR
         notMyPlot(plotId)?.mirror(e)
