@@ -8,26 +8,97 @@ class GameManager
         @numEntitiesByType = {}
         
         (@numEntitiesByType[k] = 0) for _, k of Constants.EntityType
+        #@deserializePuzzle()
 
     remainingEntities: (entityType) ->
         @puzzle.getMaxForType(entityType) - @numEntitiesByType[entityType]
 
-    addEntity: (entity) ->
-        succeeded = false
-        if entity.type is Constants.EntityType.START
-            @board.startpoint = entity
-            succeeded = true
-        else if entity.type is Constants.EntityType.END
-            @board.endPoints.push(entity)
-            succeeded = true
-        else if !@getEntityAt(entity.position[0], entity.position[1])
-            if @numEntitiesByType[entity.type] < @puzzle.getMaxForType(entity.type)
-                   succeeded = @board.add(entity)
-                   @incrementEntityType(entity.type)
-                   @addToChanged(entity.position)
+    deserializePuzzle: () ->
+        """
+            [
+                'STRANG',
+                [ RED EDGES
+                    [start x, start y],
+                    [end x, end y]
+                ],
+                [ BLUE EDGES
+                    [start x, start y],
+                    [end x, end y]
+                ]
+            ]
+        """
 
-        @traceAllLasers()
-        return succeeded
+        inferDirection = ([x,y]) ->
+            # Given position, infer the laser direction
+            top = (0 <= x < 10) and y < 0
+            bottom = (0 <= x < 10) and y >= 10
+
+            left = x < 0 and (0 <= y < 10)
+            right = x >= 10 and (0 <= y < 10)
+
+            if top
+                Constants.LaserDirection.S
+            else if bottom
+                Constants.LaserDirection.N
+            else if left
+                Constants.LaserDirection.E
+            else if right
+                Constants.LaserDirection.W
+
+        inferAcceptDirection = ([x, y]) ->
+            # Given position, infer the laser accept direction by just flipping
+            # the result of what the emit direction would be.
+            (inferDirection([x,y]) + 2) % 4
+
+        entities  = @puzzle.data[0]
+
+        [redStart, redEnd]  = @puzzle.data[1]
+
+        if @puzzle.data.length < 2
+            [blueStart, blueEnd] = @puzzle.data?[2]
+       
+        for i in [0...entities.length]
+            c = entities[i]
+            row = Math.floor(i / 10)
+            col = i % 10
+            @addEntity(@puzzle.translationTable[c]([row, col]))
+        
+        if redStart
+            redStartEntity = new Startpoint(redStart, inferDirection(redStart), Constants.Red)
+            @addEntity(redStartEntity)
+            @addLaser(new Laser(Constants.Red, redStartEntity))
+        if redEnd
+            @addEntity(new Endpoint(redEnd, inferAcceptDirection(redEnd), Constants.Red))
+        if blueStart
+            blueStartEntity = new Startpoint(blueStart, inferDirection(blueStart), Constants.Blue)
+            @addeEntity(blueStartEntity)
+            @addLaser(new Laser(Constants.Blue, blueStartEntity))
+        if blueEnd
+            @addEntity(new Endpoint(blueEnd, inferAcceptDirection(blueEnd), Constants.Blue))
+
+
+    addEntity: (entity) ->
+        if entity is false
+            @board.setAt(entity)
+        else
+            succeeded = false
+            if entity.type is Constants.EntityType.START
+                @board.startpoints.push(entity)
+                succeeded = true
+            else if entity.type is Constants.EntityType.END
+                @board.endPoints.push(entity)
+                succeeded = true
+            else if !@getEntityAt(entity.position[0], entity.position[1])
+                if @numEntitiesByType[entity.type] < @puzzle.getMaxForType(entity.type)
+                       succeeded = @board.add(entity)
+                       @addToChanged(entity.position)
+
+            @traceAllLasers()
+            
+            if succeeded
+                @incrementEntityType(entity.type)
+
+            return succeeded
     
     reset: () ->
         e.satisfied = false for e in @board.endPoints
@@ -232,6 +303,7 @@ class Board
     constructor: (@size) ->
         @grid = ((false for x in [0...@size]) for y in [0...@size])
 
+        @startpoints = []
         @endPoints = []
         @lasers = []
 
@@ -259,10 +331,30 @@ class Board
         return result[0]
         
 class Puzzle
-    constructor: (maxEntitiesNum = 1000) ->
+    constructor: (maxEntitiesNum = 1000, @data) ->
         # Actual values to be filled in once we get settled on a representation
         @maxEntitiesByType = {}
         (@maxEntitiesByType[k] = maxEntitiesNum) for _, k of Constants.EntityType
+
+        """
+            / -> Mirror NW
+            \\ -> Mirror SW
+            r -> Red Filter NW
+            R -> Red Filter NE
+            g -> Green Filter NW
+            G -> Green Filter NE
+            ^ -> Block
+            . -> Empty
+        """
+        @translationTable =
+            '/'  : (position) -> return new Mirror(position, Constants.EntityOrient.NW, false)
+            '\\' : (position) -> return new Mirror(position, Constants.EntityOrient.SW, false)
+            'r'  : (position) -> return new Filter(position, Constants.EntityOrient.NW, false, Constants.Red)
+            'R'  : (position) -> return new Filter(position, Constants.EntityOrient.NE, false, Constants.Red)
+            'g'  : (position) -> return new Filter(position, Constants.EntityOrient.NW, false, Constants.Green)
+            'G'  : (position) -> return new Filter(position, Constants.EntityOrient.NE, false, Constants.Green)
+            '^'  : (position) -> return new Block(position)
+            '.'  : (position) -> return false
 
     getMaxForType: (entityType) ->
         @maxEntitiesByType[entityType]
@@ -286,14 +378,14 @@ class GridEntity
 
 
 class Endpoint extends GridEntity
-    constructor: (@position) ->
+    constructor: (@position, @acceptDirection, @color) ->
         @type = Constants.EntityType.END
         super(@position, 1, false)
     
     accepts: (laser) -> true
 
 class Startpoint extends GridEntity
-    constructor: (@position, @direction) ->
+    constructor: (@position, @direction, @color) ->
         @type = Constants.EntityType.START
         super(@position, 1, false)
     
