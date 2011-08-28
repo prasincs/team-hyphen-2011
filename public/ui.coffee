@@ -207,11 +207,20 @@ UI =
         $("header").fadeOut()
       else
         $("header").fadeIn()
-        
-      d = @nav.draggable()
-      o = d.offset()
-      o.top *= @zoomLevel/prev
-      o.left *= @zoomLevel/prev
+      
+      # < 1 if zoomed in
+      d = @nav.draggable()                  # pretend going from 1 to 0.75
+      o = d.offset()                        # -100, -100
+      centerX = e.pageX         # 1000
+      centerY = e.pageY
+      oldX = (centerX - o.left) / prev      # 1100
+      oldY = (centerY - o.top)  / prev      # 1100
+      
+      x = oldX*@zoomLevel + o.left
+      y = oldY*@zoomLevel + o.top
+      o.left += centerX - x
+      o.top  += centerY - y
+      
       d.offset(o)
         
       $("canvas").attr width: 500*@zoomLevel, height: 500*@zoomLevel
@@ -266,20 +275,10 @@ UI =
       $div.mouseout  (e) -> p.clearLast()     or true
       @updateRemainingEntities()
     
-    if old = @plots[manager.id]
+    if old = @plots[manager.id || 1]
       $(old.front).parent().remove()
     
-    @plots[manager.id] = p
-
-    #testing stuff
-    p.manager.addEntity(new Mirror([5,5], Constants.EntityOrient.NE))
-    p.manager.addEntity(new Endpoint([5,0]))
-    start = new Startpoint([0,5], Constants.LaserDirection.E)
-    laser = new Laser('#F00', start)
-
-    p.manager.addEntity(start)
-    p.manager.addLaser(laser)
-
+    @plots[manager.id || 1] = p
     
     p.drawTiles()
     p.drawEntities()
