@@ -52,7 +52,6 @@ class Plot
     ImageManager.draw(name, @pen, x*@scale, y*@scale, @scale, @scale)
   
   startpoint : (e) ->
-    console.log e
     @pen.save()
     @pen.translate(e.position[0] * @scale, e.position[1] * @scale)
     dir = e.direction || (e.acceptDirection + 2) % 4
@@ -60,7 +59,7 @@ class Plot
       when 0 then @pen.translate @scale/2, @scale
       when 1 then @pen.translate 0, @scale/2
       when 2 then @pen.translate @scale/2, 0
-      when 3 then @pen.translate 0, 0
+      when 3 then @pen.translate @scale, @scale/2
     @pen.scale(UI.zoom() / 500.0)
     @pen.rotate((dir+3) * Math.PI/2)
     @pen.translate @scale, 0
