@@ -255,7 +255,9 @@ UI =
       d.offset(o)
       @resizePlots()
       
-    $("#give-up").click => @showStartDialog()
+    $("#give-up").click =>
+      now.requestPlot('easy') # now loading....
+      false
       
     $("#palette li").click ->
       color = $(this).data("color")
