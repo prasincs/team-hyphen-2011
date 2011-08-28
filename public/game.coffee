@@ -441,19 +441,6 @@ class Filter extends GridEntity
         super(@position, @orientation, @static)
 
     accepts: (laser) -> laser.color == @color
-
-class Prism extends GridEntity
-    constructor: (@position, @orientation, @static) ->
-        @type = Constants.EntityType.PRISM
-        super(@position, @orientation, @static)
-    
-    splitDirection: (direction) ->
-        result =
-            left: (((direction - 1)%4) + 4) % 4
-            right: (direction + 1) % 4
-        return result
-
-    accepts: (laser) -> false
  
 class Laser
     constructor: (@color, @startpoint) ->

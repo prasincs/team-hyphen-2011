@@ -14,7 +14,6 @@ class Plot
     @mp  = @mid.getContext '2d'
     @bp  = @back.getContext '2d'
     @pen = @mp
-    @drawQueue = []
     @resize()
     
   resize : ->
@@ -33,7 +32,6 @@ class Plot
   drawEntities : ->
     @pen = @mp
     @pen.clearRect 0, 0, @size, @size
-    @drawQueue = []
   
     for laser in @manager.board.lasers when laser.color is Constants.Blue
       @laser laser
@@ -44,8 +42,6 @@ class Plot
       for y in [0..9]
         if e = @manager.getEntityAt(x, y)
           @[e.constructor.name.toLowerCase()](e)
-    for fn in @drawQueue
-      fn.apply(this, [])
   
   drawImage : (name, x, y) ->
     ImageManager.draw(name, @pen, x*@scale, y*@scale, @scale, @scale)
@@ -95,18 +91,8 @@ class Plot
     @pen.save()
     @pen.translate((x+0.5) * @scale, (y+0.5) * @scale)
     @pen.rotate(Math.PI/2 * (e.orientation-1))
-    @drawImage "mirror", -0.5, -0.5
-    @pen.restore()
-  
-  prism : (e) ->
-    [x,y] = e.position
-    
-    @pen.save()
-    @pen.translate((x+0.5) * @scale, (y+0.5) * @scale)
-    @pen.rotate(Math.PI/2 * (e.orientation-1))
-    @pen.fillStyle = "#000000"
-    @pen.fillRect(4-@scale/2, -@scale/2, @scale-8, 8)
-    @pen.fillRect(-4, -@scale/2, 4, @scale)
+    name = if e.color? then "filter-#{e.color}" else "mirror"
+    @drawImage name, -0.5, -0.5
     @pen.restore()
   
   filter : (e) -> @mirror(e)
@@ -127,17 +113,18 @@ class Plot
     return if UI.zoomLevel > 1
 
     @lastMouseMove = [x,y] = @coordsToSquare e
-        
-    @fp.strokeStyle = '#00ff00' # ugly color for debugging
-    @fp.strokeRect x*@scale+1, y*@scale+1, @scale-4, @scale-4
+      
+    if !(e = @manager.getEntityAt(x,y))? or !e.static
+      @fp.strokeStyle = '#00ff00' # ugly color for debugging
+      @fp.strokeRect x*@scale+1, y*@scale+1, @scale-4, @scale-4
     
     # display tool
     if !@manager.getEntityAt(x, y) and UI.tool
       @pen = @fp
       switch UI.tool
-        when 'Mirror' then @mirror(new Mirror([x,y],1,true))
-        when 'RedFilter'  then @filter(new Filter([x,y],1,Constants.Red, false))
-        when 'BlueFilter' then @filter(new Filter([x,y],1,Constants.Blue, false))
+        when 'Mirror'     then @mirror(new Mirror([x,y],1,true))
+        when 'RedFilter'  then @filter(new Filter([x,y],1,Constants.Red, true))
+        when 'BlueFilter' then @filter(new Filter([x,y],1,Constants.Blue, true))
     
   clickHandler : (e) =>
     return if UI.zoomLevel > 1

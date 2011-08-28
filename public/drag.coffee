@@ -24,6 +24,7 @@ $ ->
         offset = @draggable.offset()
         @panStart = [e.pageX - offset.left, e.pageY - offset.top]
         @panning = true
+        @cover?.unbind().remove()
         
         $(document).bind 'mouseup.drag', (e) =>
           @panning = false
