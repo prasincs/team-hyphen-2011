@@ -17,7 +17,6 @@ class Plot
     @drawQueue = []
     @resize()
     
-    
   resize : ->
     @size  = @front.height
     @scale = @size / 10.0
@@ -35,12 +34,12 @@ class Plot
     @pen = @mp
     @pen.clearRect 0, 0, @size, @size
     @drawQueue = []
+    for laser in @manager.board.lasers
+      @laser laser
     for x in [0..9]
       for y in [0..9]
         if e = @manager.getEntityAt(x, y)
           @[e.constructor.name.toLowerCase()](e)
-    for laser in @manager.board.lasers
-      @laser laser
     for fn in @drawQueue
       fn.apply(this, [])
   
@@ -54,9 +53,11 @@ class Plot
       @pen.translate((sx+t[0])*@scale, (sy+t[1])*@scale)
       @pen.rotate(angle)
 
+      length = Math.min(length*@scale, 500)
+
       i = ImageManager.get("laser-long")
-      z = UI.zoomLevel
-      @pen.drawImage(i, 0, 0, length*@scale, 25, 0, -12.5*z, length*@scale, 25*z)
+      z = UI.zoom() / 500
+      @pen.drawImage(i, 0, 0, length, 25, 0, -12.5*z, length, 25*z)
       @pen.restore()
     
     len = ([ex, ey]) ->
@@ -66,28 +67,20 @@ class Plot
       angle = (segment.direction-1) * Math.PI/2
       [sx, sy] = segment.start.position
       if segment.start.type is Constants.EntityType.START
+        l = if segment.end?.position then len(segment.end.position) + 1 else 11
         t = switch segment.direction
           when Constants.LaserDirection.N then [ 0.5,  0.5]
           when Constants.LaserDirection.S then [ 0.5, -0.5]
           when Constants.LaserDirection.W then [ 0.5,  0.5]
           when Constants.LaserDirection.E then [-0.5,  0.5]
-        lilLaser(angle, len(segment.end.position) + 1, t)
-      else if segment.end
-        l = len(segment.end.position) + 0.5
+        lilLaser(angle, l, t)
+      else if segment.end and segment.end.type isnt Constants.EntityType.END
+        l = len(segment.end.position)
         t = [0.5, 0.5]
         lilLaser(angle, l)
       else if not segment.end or segment.end.type is Constants.EntityType.END
         t = [0.5, 0.5]
         lilLaser(angle, 10)
-        
-      name = segment.end?.constructor.name
-      if name == 'Mirror' or name == 'Filter'
-        w = 25*UI.zoomLevel
-        do (w, segment) =>
-          @drawQueue.push ->
-            ImageManager.draw("laser-reflect-component-red", @pen,
-            (segment.end.position[0]+0.5)*@scale-w/2,
-            (segment.end.position[1]+0.5)*@scale-w/2, w, w )
     
 
   block : (e) ->
@@ -128,7 +121,7 @@ class Plot
   hoverHandler : (e) =>
     @clearLast()
 
-    return if UI.zoomLevel < 0.5
+    return if UI.zoomLevel > 1
 
     @lastMouseMove = [x,y] = @coordsToSquare e
         
@@ -141,7 +134,7 @@ class Plot
       @[UI.tool.toLowerCase()](new (window[UI.tool])([x,y], 1, true))
     
   clickHandler : (e) =>
-    return if UI.zoomLevel < 0.5
+    return if UI.zoomLevel > 1
     
     [x, y] = @coordsToSquare e
     
@@ -166,7 +159,7 @@ class Plot
     @clearLast()
     
 UI =
-  zoomLevel : 1 # between 0 and 1 with 1 being max zoom level and 0.25 being 4x further away
+  zoomLevel : 0
   plots     : []
   tool      : false
   dims      : [0, 0]
@@ -174,6 +167,7 @@ UI =
   localDiv  : false
   sprintTime: false
   nav       : false
+  zoomLevels : [500, 400, 300, 200, 100]
   
   updateRemainingEntities : ->
     if @localDiv
@@ -219,14 +213,12 @@ UI =
       false
 
     $(document).mousewheel (e, delta) =>
-
-      prev = @zoomLevel
-      if delta > 0
-        @zoomLevel *= 1.15
-      else
-        @zoomLevel /= 1.15
-        
-      @zoomLevel = Math.max(0.1, Math.min(1, @zoomLevel))
+      prev = @zoom() / 500.0
+      if delta < 0
+        @zoomLevel += 1 if @zoomLevel < 4
+      else if @zoomLevel > 0
+        @zoomLevel -= 1
+      curr = @zoom() / 500.0  
       
       # < 1 if zoomed in
       d = @nav.draggable()                  # pretend going from 1 to 0.75
@@ -236,20 +228,13 @@ UI =
       oldX = (centerX - o.left) / prev      # 1100
       oldY = (centerY - o.top)  / prev      # 1100
       
-      x = oldX*@zoomLevel + o.left
-      y = oldY*@zoomLevel + o.top
+      x = oldX*curr + o.left
+      y = oldY*curr + o.top
       o.left += centerX - x
       o.top  += centerY - y
       
       d.offset(o)
-        
-      $("canvas").attr width: 500*@zoomLevel, height: 500*@zoomLevel
-      for plot in @plots when plot
-        plot.resize()
-        d = 500 * @zoomLevel
-        $(plot.front).parent().css left: "#{Math.round(d*plot.manager.gridX)}px", top: "#{Math.round(d*plot.manager.gridY)}px"
-
-      @draw()
+      @resizePlots()
       
     $("#give-up").click => @showStartDialog()
       
@@ -258,11 +243,25 @@ UI =
       $("#palate li").removeClass("selected")
       $(this).addClass("selected")
   
+  zoom : () -> @zoomLevels[@zoomLevel]
+  
+  resizePlots : ->
+    $("canvas").attr width: @zoom(), height: @zoom()
+    for plot in @plots when plot
+      plot.resize()
+      d = @zoom() * 1.01
+      css =
+        left:        d*plot.manager.gridX
+        top:         d*plot.manager.gridY
+        width:       @zoom()
+        height:      @zoom()
+      $(plot.front).parent().css(css)
+    @draw()
+  
   scrollTo : ($e) ->    
     offset = $e.offset()
     
-    # the right 250px of the screen is the sidebar
-    centerX = ($("body").width() - 250)  / 2
+    centerX = $("body").width()  / 2
     centerY = $("body").height() / 2
 
     idealX = centerX - $e.width()/2
@@ -300,6 +299,7 @@ UI =
       $(old.front).parent().remove()
     @plots[manager.id] = p
     
+    
     #testing stuff
     """
     p.manager.addEntity(new Mirror([5,5], Constants.EntityOrient.NE))
@@ -318,4 +318,5 @@ UI =
              Math.max(@dims[1], 1+manager.gridY)]
                       
     $div.css left: p.size*manager.gridX, top: p.size*manager.gridY
+    @resizePlots()
     @scrollTo(@localDiv) if mine

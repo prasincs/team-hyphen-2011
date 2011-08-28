@@ -11,7 +11,7 @@ Puzzle      = Game.Puzzle
 Mirror      = Game.Mirror
 Prism       = Game.Prism
 Filter      = Game.Filter
-
+generator   = require './generator/gen'
 
 server = require('http').createServer (req, resp) -> 
   req.addListener 'end', -> files.serve req, resp
@@ -26,7 +26,7 @@ everyone = nowjs.initialize(server) #, {socketio: {'log level': 1}})
 lastPlotId = 1
 idMap = {}
 plots = {}
-lastPlot = [0,0] #get from database
+lastPlot = [10,10] #get from database
 usedPlots = {}
 
 isPlotAssigned = (x,y)->
@@ -55,7 +55,7 @@ getNewPlot = ->
         y= y-1
       when Constants.LaserDirection.W
         x= x+1
-      when Constants.LaserDirection.E 
+      when Constants.LaserDirection.E
         x = x-1
     if not isPlotAssigned x,y
       lastPlot = [x,y]
@@ -68,17 +68,18 @@ getNewPlot = ->
 
 everyone.now.requestPlot = (difficulty) ->
   [x,y] = getNewPlot()
-  puzzle = new Puzzle(10)
+  puzzle = generator.serialize
+  #puzzle = new Puzzle(10)
   gm = new GameManager lastPlotId, puzzle, x ,y
   everyone.now.startPlot lastPlotId , [x, y], puzzle, @user.clientId
-  lastPlotId+=1;
+  lastPlotId+=1
   userPlot @user, gm
 
 
 everyone.now.requestNeighborPlots = (id)->
   for clientId, gm of plots
     if  clientId != @user.clientId
-      everyone.now.drawPlot gm.id, [gm.gridX, gm.gridY], gm.puzzle, clientId
+      @now.drawPlot gm.id, [gm.gridX, gm.gridY], gm.puzzle, clientId
 
 
 everyone.now.entityAdded = (entity)->
