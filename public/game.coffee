@@ -73,7 +73,7 @@ class GameManager
 
         [redStart, redEnd]  = @puzzle.data[1]
 
-        if @puzzle.data.length < 2
+        if @puzzle.data.length is 3
             [blueStart, blueEnd] = @puzzle.data[2]
        
         for i in [0...entities.length]
@@ -90,7 +90,7 @@ class GameManager
             @addEntity(new Endpoint(redEnd, inferAcceptDirection(redEnd), Constants.Red))
         if blueStart
             blueStartEntity = new Startpoint(blueStart, inferDirection(blueStart), Constants.Blue)
-            @addeEntity(blueStartEntity)
+            @addEntity(blueStartEntity)
             @addLaser(new Laser(Constants.Blue, blueStartEntity))
         if blueEnd
             @addEntity(new Endpoint(blueEnd, inferAcceptDirection(blueEnd), Constants.Blue))

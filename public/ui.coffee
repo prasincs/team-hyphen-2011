@@ -136,8 +136,8 @@ class Plot
       @pen = @fp
       switch UI.tool
         when 'Mirror' then @mirror(new Mirror([x,y],1,true))
-        when 'RedFilter'  then @filter(new Filter([x,y],1,true,Constants.Red))
-        when 'BlueFilter' then @filter(new Filter([x,y],1,true,Constants.Blue))
+        when 'RedFilter'  then @filter(new Filter([x,y],1,Constants.Red, false))
+        when 'BlueFilter' then @filter(new Filter([x,y],1,Constants.Blue, false))
     
   clickHandler : (e) =>
     return if UI.zoomLevel > 1
@@ -154,8 +154,8 @@ class Plot
     else if UI.tool
       e = switch UI.tool
           when 'Mirror'     then new Mirror([x,y],1,false)
-          when 'RedFilter'  then new Filter([x,y],1,false,Constants.Red)
-          when 'BlueFilter' then new Filter([x,y],1,false,Constants.Blue)
+          when 'RedFilter'  then new Filter([x,y],1,Constants.Red, false)
+          when 'BlueFilter' then new Filter([x,y],1,Constants.Blue, false)
       @manager.addEntity e
       now.entityAdded e
       UI.tool = false
