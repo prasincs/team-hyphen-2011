@@ -37,7 +37,21 @@ class Plot
     @pen.strokeStyle = e.color
     for segment in e.segments
       [sx, sy] = segment.start.position
-      [ex, ey] = segment.end.position
+      
+      if segment.end
+        [ex, ey] = segment.end.position
+      else
+        switch segment.direction
+          when Constants.LaserDirection.N
+            [ex, ey] = [segment.start.position[0], 0]
+          when Constants.LaserDirection.S
+            [ex, ey] = [segment.start.position[0], 9]
+          when Constants.LaserDirection.W
+            [ex, ey] = [0, segment.start.position[1]]
+          when Constants.LaserDirection.E
+            [ex, ey] = [9, segment.start.position[1]]
+
+
       @pen.moveTo((sx+0.5)*@scale, (sy+0.5)*@scale)
       @pen.lineTo((ex+0.5)*@scale, (ey+0.5)*@scale)
     @pen.closePath()
@@ -120,6 +134,8 @@ class Plot
       now.entityAdded e
       UI.tool = false
       $("#palate li").removeClass("selected")
+    else
+        return
       
     @drawEntities()
     UI.updateRemainingEntities()
@@ -191,11 +207,20 @@ UI =
         $("header").fadeOut()
       else
         $("header").fadeIn()
-        
-      d = @nav.draggable()
-      o = d.offset()
-      o.top *= @zoomLevel/prev
-      o.left *= @zoomLevel/prev
+      
+      # < 1 if zoomed in
+      d = @nav.draggable()                  # pretend going from 1 to 0.75
+      o = d.offset()                        # -100, -100
+      centerX = e.pageX         # 1000
+      centerY = e.pageY
+      oldX = (centerX - o.left) / prev      # 1100
+      oldY = (centerY - o.top)  / prev      # 1100
+      
+      x = oldX*@zoomLevel + o.left
+      y = oldY*@zoomLevel + o.top
+      o.left += centerX - x
+      o.top  += centerY - y
+      
       d.offset(o)
         
       $("canvas").attr width: 500*@zoomLevel, height: 500*@zoomLevel
@@ -250,10 +275,10 @@ UI =
       $div.mouseout  (e) -> p.clearLast()     or true
       @updateRemainingEntities()
     
-    if old = @plots[manager.id]
+    if old = @plots[manager.id || 1]
       $(old.front).parent().remove()
-    
-    @plots[manager.id] = p
+    console.log("manager-id "+ manager.id)
+    @plots[manager.id || 1] = p
     
     p.drawTiles()
     p.drawEntities()

@@ -2,7 +2,7 @@ if require?
   Constants = require('./common').Constants
 
 class GameManager
-    constructor: (@puzzle, @gridX, @gridY) ->
+    constructor: (@id, @puzzle, @gridX, @gridY) ->
         @board = new Board(10)
         @changed = []
         @numEntitiesByType = {}
@@ -43,7 +43,7 @@ class GameManager
         
         if laser.segments.length 
             startPoint = laser.segments[laser.segments.length-1].start
-            currDir = (laser.segments[laser.segments.length-2].direction-1) % 4
+            currDir = (((laser.segments[laser.segments.length-2].direction-1)%4) + 4) % 4
 
         else
             startPoint = laser.startpoint
@@ -76,7 +76,7 @@ class GameManager
                     dy = 0
                     dx = 1
  
-        while(x >= 0 and y >= 0 and x < @board.size-1 and y < @board.size-1)
+        while(x >= 0 and y >= 0 and x < @board.size and y < @board.size)
             mapDir(currDir)
             x += dx
             y += dy
@@ -276,7 +276,7 @@ class GridEntity
         @orientation = (@orientation + 1) % 4
 
     rotateCounterClockwise: () ->
-        @orientation = (@orientation - 1) % 4
+        @orientation = (((@orientation - 1)%4) + 4) % 4
 
     # Does this entity accept this laser?
     # Acceptance means it doesn't straight up block it
@@ -309,11 +309,12 @@ class Mirror extends GridEntity
         if @orientation is Constants.EntityOrient.NW or @orientation is Constants.EntityOrient.SE
             if direction is Constants.LaserDirection.N or direction is Constants.LaserDirection.S
                result = (direction + 1) % 4
+               
             else
-               result = (direction - 1) % 4
+               result = (((direction - 1)%4) + 4) % 4
         else if @orientation is Constants.EntityOrient.SW or @orientation is Constants.EntityOrient.NE
             if direction is Constants.LaserDirection.N or direction is Constants.LaserDirection.S
-                result = (direction - 1) % 4
+                result = (((direction - 1)%4) + 4) % 4
             else
                 result = (direction + 1) % 4
         return result
@@ -339,7 +340,7 @@ class Prism extends GridEntity
     
     splitDirection: (direction) ->
         result =
-            left: (direction - 1) % 4
+            left: (((direction - 1)%4) + 4) % 4
             right: (direction + 1) % 4
         return result
 

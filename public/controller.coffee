@@ -5,25 +5,28 @@ $ ->
   
   reconstitute = (blank, data) -> data.__proto__ = blank
   
-  notMyPlot = ([x, y]) ->
-    plot = UI.plots[x][y]
-    if plot == UI.localPlot then undefined else plot
+  notMyPlot = (plotId) ->
+    console.log plotId , "<-- plotId"
+    console.log UI.plots
+    plot = UI.plots[plotId]
+    plot
   
   now = window.now ?= {}
 
-  now.startPlot = ([x, y], puzzle, clientId) ->
+  now.startPlot = (id, [x, y], puzzle, clientId) ->
     reconstitute new Puzzle(1), puzzle
-    UI.addPlot new GameManager(puzzle, x, y), now.core.clientId == clientId
+    UI.addPlot new GameManager(id, puzzle, x, y), now.core.clientId == clientId
     
-  now.addEntity = (plot, e) ->
+  now.addEntity = (plotId, e) ->
+    console.log plotId, UI.localPlot.manager.id
     switch e.type
       when Constants.EntityType.MIRROR
-        notMyPlot(plot)?.mirror(e)
+        notMyPlot(plotId)?.mirror(e)
       when Constants.EntityType.PRISM
-        notMyPlot(plot)?.prism(e)
+        notMyPlot(plotId)?.prism(e)
       when Constants.EntityType.FILTER
-        notMyPlot(plot)?.filter(e)
-    
+        notMyPlot(plotId)?.filter(e)
+  
   now.removeEntity = (plot, x, y) ->
     notMyPlot(plot)?.removeEntityAt(x,y)
     
