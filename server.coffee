@@ -140,15 +140,15 @@ getNeighborStartEndPoints = (x,y)->
   points
 
 
-
 everyone.now.requestPlot = (difficulty) ->
   [x,y] = getNewPlot()
   puzzle = new Puzzle(10, generator.serialize(points=getNeighborStartEndPoints()))
-  #console.log puzzle
-  gm = new GameManager lastPlotId, puzzle, x ,y
+  gm = new GameManager lastPlotId, puzzle, x, y
+  gm.deserializePuzzle()
   everyone.now.startPlot plotId , [x, y], puzzle, @user.clientId
   assignPlot x,y, @user
   userPlot @user, gm
+  
 
 
 everyone.now.requestNeighborPlots = (id)->
@@ -179,9 +179,10 @@ everyone.now.entityRemoved = (x, y) ->
   
 everyone.now.entityRotated = (x, y) ->
   plot = userPlot(@user)
-  everyone.now.rotateEntity plot, x, y
+  everyone.now.rotateEntity plot.id, x, y
   plot.rotateEntityClockwise(x,y)
   checkWinConditions(this)
+
 
 #everyone.now.validateSolution = (solution)->
 #  unimplemented
