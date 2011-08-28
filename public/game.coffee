@@ -12,19 +12,110 @@ class GameManager
     remainingEntities: (entityType) ->
         @puzzle.getMaxForType(entityType) - @numEntitiesByType[entityType]
 
+    deserializePuzzle: () ->
+        """
+            [
+                'STRANG',
+                [ RED EDGES
+                    [start x, start y],
+                    [end x, end y]
+                ],
+                [ BLUE EDGES
+                    [start x, start y],
+                    [end x, end y]
+                ]
+            ]
+        """
+
+        """
+            / -> Mirror NW
+            \\ -> Mirror SW
+            r -> Red Filter NW
+            R -> Red Filter NE
+            g -> Green Filter NW
+            G -> Green Filter NE
+            ^ -> Block
+            . -> Empty
+        """
+        translationTable =
+            '/'  : (position) -> return new Mirror(position, Constants.EntityOrient.NW, true)
+            '\\' : (position) -> return new Mirror(position, Constants.EntityOrient.SW, true)
+            'r'  : (position) -> return new Filter(position, Constants.EntityOrient.NW, Constants.Red, true)
+            'R'  : (position) -> return new Filter(position, Constants.EntityOrient.NE, Constants.Red, true)
+            'g'  : (position) -> return new Filter(position, Constants.EntityOrient.NW, Constants.Green, true)
+            'G'  : (position) -> return new Filter(position, Constants.EntityOrient.NE, Constants.Green, true)
+            'b'  : (position) -> return new Block(position)
+            '.'  : (position) -> return false
+
+        inferDirection = ([x,y]) ->
+            # Given position, infer the laser direction
+            top = (0 <= x < 10) and y < 0
+            bottom = (0 <= x < 10) and y >= 10
+
+            left = x < 0 and (0 <= y < 10)
+            right = x >= 10 and (0 <= y < 10)
+
+            if top
+                Constants.LaserDirection.S
+            else if bottom
+                Constants.LaserDirection.N
+            else if left
+                Constants.LaserDirection.E
+            else if right
+                Constants.LaserDirection.W
+
+        inferAcceptDirection = ([x, y]) ->
+            # Given position, infer the laser accept direction by just flipping
+            # the result of what the emit direction would be.
+            (inferDirection([x,y]) + 2) % 4
+
+        entities  = @puzzle.data[0]
+
+        [redStart, redEnd]  = @puzzle.data[1]
+
+        if @puzzle.data.length < 2
+            [blueStart, blueEnd] = @puzzle.data[2]
+       
+        for i in [0...entities.length]
+            c = entities[i]
+            row = Math.floor(i / 10)
+            col = i % 10
+            @addEntity(translationTable[c]([row, col]))
+        
+        if redStart
+            redStartEntity = new Startpoint(redStart, inferDirection(redStart), Constants.Red)
+            @addEntity(redStartEntity)
+            @addLaser(new Laser(Constants.Red, redStartEntity))
+        if redEnd
+            @addEntity(new Endpoint(redEnd, inferAcceptDirection(redEnd), Constants.Red))
+        if blueStart
+            blueStartEntity = new Startpoint(blueStart, inferDirection(blueStart), Constants.Blue)
+            @addeEntity(blueStartEntity)
+            @addLaser(new Laser(Constants.Blue, blueStartEntity))
+        if blueEnd
+            @addEntity(new Endpoint(blueEnd, inferAcceptDirection(blueEnd), Constants.Blue))
+
+
     addEntity: (entity) ->
-        succeeded = false
-        if entity.type is Constants.EntityType.START
-            @board.startpoint = entity
-            succeeded = true
-        else if entity.type is Constants.EntityType.END
-            @board.endPoints.push(entity)
-            succeeded = true
-        else if !@getEntityAt(entity.position[0], entity.position[1])
-            if @numEntitiesByType[entity.type] < @puzzle.getMaxForType(entity.type)
-                   succeeded = @board.add(entity)
-                   @incrementEntityType(entity.type)
-                   @addToChanged(entity.position)
+        if entity is false
+            @board.setAt(entity)
+        else
+            succeeded = false
+            if entity.type is Constants.EntityType.START
+                @board.startpoints.push(entity)
+                succeeded = true
+            else if entity.type is Constants.EntityType.END
+                @board.endPoints.push(entity)
+                succeeded = true
+            else if !@getEntityAt(entity.position[0], entity.position[1])
+                if @numEntitiesByType[entity.type] < @puzzle.getMaxForType(entity.type)
+                       succeeded = @board.add(entity)
+                       @addToChanged(entity.position)
+
+            @traceAllLasers()
+            
+            if succeeded
+                @incrementEntityType(entity.type) unless entity.static
 
         @traceAllLasers()
         return succeeded
@@ -76,8 +167,8 @@ class GameManager
             laser.segments.push(firstSeg)
 
 
- 
-        while(x >= 0 and y >= 0 and x < @board.size and y < @board.size)
+        blocked = false
+        while( not blocked and x >= 0 and y >= 0 and x < @board.size and y < @board.size)
             mapDir(currDir)
             current = @board.getAt(x, y)
             unless current
@@ -99,9 +190,11 @@ class GameManager
 
                     when Constants.EntityType.BLOCK
                         # Do nothing because ITS A FUCKING BLOCK
+                        blocked = true
                         break
                     when Constants.EntityType.FILTER
                         if current.color isnt laser.color
+                            blocked = true
                             break
                         else
                             seg = new LaserSegment( current, null, laser, currDir)
@@ -132,6 +225,13 @@ class GameManager
             mapDir(currDir)
             x += dx
             y += dy
+
+            # Special check for endpoints
+            endpoint = (e for e in this.board.endPoints when x is e.position[0] and y is e.position[1])
+            if endpoint.length
+                previous = laser.segments[laser.segments.length-1]
+                previous.end = endpoint[0]
+            
         if branches.length
             laser.merge(branches)
 
