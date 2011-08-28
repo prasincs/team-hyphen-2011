@@ -14,7 +14,6 @@ class Plot
     @mp  = @mid.getContext '2d'
     @bp  = @back.getContext '2d'
     @pen = @mp
-    @drawQueue = []
     @resize()
     
   resize : ->
@@ -33,7 +32,6 @@ class Plot
   drawEntities : ->
     @pen = @mp
     @pen.clearRect 0, 0, @size, @size
-    @drawQueue = []
   
     for laser in @manager.board.lasers when laser.color is Constants.Blue
       @laser laser
@@ -44,8 +42,6 @@ class Plot
       for y in [0..9]
         if e = @manager.getEntityAt(x, y)
           @[e.constructor.name.toLowerCase()](e)
-    for fn in @drawQueue
-      fn.apply(this, [])
   
   drawImage : (name, x, y) ->
     ImageManager.draw(name, @pen, x*@scale, y*@scale, @scale, @scale)
@@ -91,22 +87,13 @@ class Plot
     @drawImage "block", x, y
     
   mirror : (e) ->
+    console.log e
     [x, y] = e.position
     @pen.save()
     @pen.translate((x+0.5) * @scale, (y+0.5) * @scale)
     @pen.rotate(Math.PI/2 * (e.orientation-1))
-    @drawImage "mirror", -0.5, -0.5
-    @pen.restore()
-  
-  prism : (e) ->
-    [x,y] = e.position
-    
-    @pen.save()
-    @pen.translate((x+0.5) * @scale, (y+0.5) * @scale)
-    @pen.rotate(Math.PI/2 * (e.orientation-1))
-    @pen.fillStyle = "#000000"
-    @pen.fillRect(4-@scale/2, -@scale/2, @scale-8, 8)
-    @pen.fillRect(-4, -@scale/2, 4, @scale)
+    name = if e.color then "filter-#{e.color}" else "mirror"
+    @drawImage name, -0.5, -0.5
     @pen.restore()
   
   filter : (e) -> @mirror(e)
@@ -127,17 +114,24 @@ class Plot
     return if UI.zoomLevel > 1
 
     @lastMouseMove = [x,y] = @coordsToSquare e
-        
-    @fp.strokeStyle = '#00ff00' # ugly color for debugging
-    @fp.strokeRect x*@scale+1, y*@scale+1, @scale-4, @scale-4
+
+    entity = @manager.getEntityAt(x,y)
+    if !entity or !entity.static
+      @fp.strokeStyle = '#00ff00' # ugly color for debugging
+      @fp.strokeRect x*@scale+1, y*@scale+1, @scale-4, @scale-4
+    
+    if entity and entity.static
+      $(@front).css 'cursor', 'not-allowed !important'
+    else
+      $(@front).css 'cursor', 'pointer !important'
     
     # display tool
-    if !@manager.getEntityAt(x, y) and UI.tool
+    if !entity and UI.tool
       @pen = @fp
       switch UI.tool
-        when 'Mirror' then @mirror(new Mirror([x,y],1,true))
-        when 'RedFilter'  then @filter(new Filter([x,y],1,Constants.Red, false))
-        when 'BlueFilter' then @filter(new Filter([x,y],1,Constants.Blue, false))
+        when 'Mirror'     then @mirror(new Mirror([x,y],1,true))
+        when 'RedFilter'  then @filter(new Filter([x,y],1,Constants.Red, true))
+        when 'BlueFilter' then @filter(new Filter([x,y],1,Constants.Blue, true))
     
   clickHandler : (e) =>
     return if UI.zoomLevel > 1
@@ -159,7 +153,7 @@ class Plot
       @manager.addEntity e
       now.entityAdded e
       UI.tool = false
-      $("#palate li").removeClass("selected")
+      $("#palette li").removeClass("selected")
     else
         return
       
@@ -171,7 +165,8 @@ UI =
   zoomLevel : 0
   plots     : []
   tool      : false
-  dims      : [0, 0]
+  topLeft   :  [1000000,   1000000]
+  bottomRight: [-1000000, -1000000]
   localPlot : false
   localDiv  : false
   sprintTime: false
@@ -208,13 +203,7 @@ UI =
       
     $(document).bind 'contextmenu', -> false
     
-    @nav = $.infinitedrag("#map", {}, {
-      width: 1000,
-      height: 1000,
-      range_col: [-5, 5] # UPDATE ME AS APPROPRAITE
-      range_row: [-5, 5]
-      oncreate: ->
-    })
+    @nav = $.infinitedrag("#map", [-1000, -1000, 1000, 1000])
     
     $("#start-playing").click ->
       UI.hideStartDialog()
@@ -230,7 +219,7 @@ UI =
       curr = @zoom() / 500.0  
       
       # < 1 if zoomed in
-      d = @nav.draggable()                  # pretend going from 1 to 0.75
+      d = @nav.draggable                  # pretend going from 1 to 0.75
       o = d.offset()                        # -100, -100
       centerX = e.pageX         # 1000
       centerY = e.pageY
@@ -267,7 +256,18 @@ UI =
         height:      @zoom()
       $(plot.front).parent().css(css)
     @draw()
-  
+    @updatePan()
+    
+  updatePan : ->
+    $("#handle").css({
+      width: (@bottomRight[0] - @topLeft[0]) * @zoom() * 2,
+      height: (@bottomRight[1] - @topLeft[1]) * @zoom()
+    })
+    @nav.bounds = [@topLeft[0] * @zoom(),
+                   @topLeft[1] * @zoom(),
+                   @bottomRight[0] * @zoom(),
+                   @bottomRight[1] * @zoom()]
+    
   scrollTo : ($e) ->    
     offset = $e.offset()
     
@@ -280,10 +280,10 @@ UI =
     dx = offset.left - idealX
     dy = offset.top  - idealY
     
-    dragOff = UI.nav.draggable().offset()
+    dragOff = UI.nav.draggable.offset()
     dragOff.left -= dx
     dragOff.top  -= dy
-    UI.nav.draggable().offset(dragOff)
+    UI.nav.draggable.offset(dragOff)
   
   addPlot : (manager, mine = false) ->
     $div = $("<div/>").addClass("plot").appendTo($("#map"))
@@ -324,9 +324,11 @@ UI =
     p.drawTiles()
     p.drawEntities()
     
-    @dims = [Math.max(@dims[0], 1+manager.gridX),
-             Math.max(@dims[1], 1+manager.gridY)]
-                      
+    @bottomRight = [Math.max(@bottomRight[0], 1+manager.gridX),
+                    Math.max(@bottomRight[1], 1+manager.gridY)]
+    @topLeft = [Math.min(@topLeft[0], manager.gridX),
+                Math.min(@topLeft[1], manager.gridY)]
+                       
     $div.css left: p.size*manager.gridX, top: p.size*manager.gridY
     @resizePlots()
     @scrollTo(@localDiv) if mine
