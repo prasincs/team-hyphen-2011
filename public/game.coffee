@@ -38,12 +38,12 @@ class GameManager
             . -> Empty
         """
         translationTable =
-            '/'  : (position) -> return new Mirror(position, Constants.EntityOrient.NW, false)
-            '\\' : (position) -> return new Mirror(position, Constants.EntityOrient.SW, false)
-            'r'  : (position) -> return new Filter(position, Constants.EntityOrient.NW, false, Constants.Red)
-            'R'  : (position) -> return new Filter(position, Constants.EntityOrient.NE, false, Constants.Red)
-            'g'  : (position) -> return new Filter(position, Constants.EntityOrient.NW, false, Constants.Green)
-            'G'  : (position) -> return new Filter(position, Constants.EntityOrient.NE, false, Constants.Green)
+            '/'  : (position) -> return new Mirror(position, Constants.EntityOrient.NW, true)
+            '\\' : (position) -> return new Mirror(position, Constants.EntityOrient.SW, true)
+            'r'  : (position) -> return new Filter(position, Constants.EntityOrient.NW, Constants.Red, true)
+            'R'  : (position) -> return new Filter(position, Constants.EntityOrient.NE, Constants.Red, true)
+            'g'  : (position) -> return new Filter(position, Constants.EntityOrient.NW, Constants.Green, true)
+            'G'  : (position) -> return new Filter(position, Constants.EntityOrient.NE, Constants.Green, true)
             'b'  : (position) -> return new Block(position)
             '.'  : (position) -> return false
 
@@ -244,11 +244,12 @@ class GameManager
 
     removeEntityAt: (x, y) ->
         occupant = @board.getAt(x, y)
+        
         if occupant
-            @decrementEntityType(occupant.type)
-
-        @board.setAt(x, y, false)
-        @traceAllLasers()
+            unless occupant.static
+                @decrementEntityType(occupant.type)
+                @board.setAt(x, y, false)
+                @traceAllLasers()
     
     incrementEntityType: (type) ->
         @numEntitiesByType[type] += 1
@@ -257,14 +258,20 @@ class GameManager
         @numEntitiesByType[type] -= 1
     
     rotateEntityClockwise: (x, y) ->
-        @getEntityAt(x, y).rotateClockwise()
-        @traceAllLasers()
-        @addToChanged(x, y)
-
+        entity = @getEntityAt(x, y)
+        if entity
+            unless entity.static
+                entity.rotateClockwise()
+                @traceAllLasers()
+                @addToChanged(x, y)
+    
     rotateEntityCounterClockwise: (x, y) ->
-        @getEntityAt(x, y).rotateCounterClockwise()
-        @traceAllLasers()
-        @addToChanged(x, y)
+        entity = @getEntityAt(x, y)
+        if entity
+            unless entity.static
+                entity.rotateCounterClockwise()
+                @traceAllLasers()
+                @addToChanged(x, y)
 
     isSolved: (x, y) ->
         # Basic idea is to walk each laser and make sure the path has the following properties
@@ -359,7 +366,7 @@ class Puzzle
         @maxEntitiesByType[entityType]
 
 class GridEntity
-    constructor: (@position, @orientation, @mobility) ->
+    constructor: (@position, @orientation, @static) ->
       @type ||= 0
     
     rotateTo: (orientation) ->
@@ -379,22 +386,22 @@ class GridEntity
 class Endpoint extends GridEntity
     constructor: (@position, @acceptDirection, @color) ->
         @type = Constants.EntityType.END
-        super(@position, 1, false)
+        super(@position, 1, true)
     
     accepts: (laser) -> true
 
 class Startpoint extends GridEntity
     constructor: (@position, @direction, @color) ->
         @type = Constants.EntityType.START
-        super(@position, 1, false)
+        super(@position, 1, true)
     
     accepts: (laser) -> true
     
 
 class Mirror extends GridEntity
-    constructor: (@position, @orientation, @mobility) ->
+    constructor: (@position, @orientation, @static) ->
         @type = Constants.EntityType.MIRROR
-        super(@position, @orientation, @mobility)
+        super(@position, @orientation, @static)
 
     accepts: (laser) -> false
     bounceDirection: (direction) ->
@@ -415,21 +422,21 @@ class Mirror extends GridEntity
 class Block extends GridEntity
     constructor: (@position) ->
         @type = Constants.EntityType.BLOCK
-        super(@position, 1, false)
+        super(@position, 1, true)
 
     accepts: (laser) -> false
         
 class Filter extends GridEntity
-    constructor: (@position, @orientation, @mobility, @color) ->
+    constructor: (@position, @orientation, @color, @static) ->
         @type = Constants.EntityType.FILTER
-        super(@position, @orientation, @mobility)
+        super(@position, @orientation, @static)
 
     accepts: (laser) -> laser.color == @color
 
 class Prism extends GridEntity
-    constructor: (@position, @orientation, @mobility) ->
+    constructor: (@position, @orientation, @static) ->
         @type = Constants.EntityType.PRISM
-        super(@position, @orientation, @mobility)
+        super(@position, @orientation, @static)
     
     splitDirection: (direction) ->
         result =
