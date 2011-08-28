@@ -37,23 +37,37 @@ class Plot
     @pen.strokeStyle = e.color
     for segment in e.segments
       [sx, sy] = segment.start.position
-      
-      if segment.end
+
+      if segment.start.type is Constants.EntityType.START
         [ex, ey] = segment.end.position
-      else
         switch segment.direction
           when Constants.LaserDirection.N
-            [ex, ey] = [segment.start.position[0], 0]
+            [sx, sy] = [sx + 0.5, sy + 0.5]
           when Constants.LaserDirection.S
-            [ex, ey] = [segment.start.position[0], 9]
+            [sx, sy] = [sx + 0.5, sy - 0.5]
           when Constants.LaserDirection.W
-            [ex, ey] = [0, segment.start.position[1]]
+            [sx, sy] = [sx + 0.5, sy + 0.5]
           when Constants.LaserDirection.E
-            [ex, ey] = [9, segment.start.position[1]]
+            [sx, sy] = [sx - 0.5, sy + 0.5]
+        @pen.moveTo(sx*@scale, sy*@scale)
+        @pen.lineTo((ex+0.5)*@scale, (ey+0.5)*@scale)
+      else if segment.end
+        [ex, ey] = segment.end.position
+        @pen.moveTo((sx+0.5)*@scale, (sy+0.5)*@scale)
+        @pen.lineTo((ex+0.5)*@scale, (ey+0.5)*@scale)
+      else if not segment.end or segment.end.type is Constants.EntityType.END
+        switch segment.direction
+          when Constants.LaserDirection.N
+            [ex, ey] = [segment.start.position[0] + 0.5, -1]
+          when Constants.LaserDirection.S
+            [ex, ey] = [segment.start.position[0] + 0.5, 10]
+          when Constants.LaserDirection.W
+            [ex, ey] = [-1, segment.start.position[1] + 0.5]
+          when Constants.LaserDirection.E
+            [ex, ey] = [10, segment.start.position[1] + 0.5]
+        @pen.moveTo((sx+0.5)*@scale, (sy+0.5)*@scale)
+        @pen.lineTo(ex*@scale, ey*@scale)
 
-
-      @pen.moveTo((sx+0.5)*@scale, (sy+0.5)*@scale)
-      @pen.lineTo((ex+0.5)*@scale, (ey+0.5)*@scale)
     @pen.closePath()
     @pen.stroke()
     
@@ -280,6 +294,15 @@ UI =
     
     @plots[manager.id || 1] = p
     
+    #testing stuff
+    p.manager.addEntity(new Mirror([5,5], Constants.EntityOrient.NE))
+    p.manager.addEntity(new Endpoint([5,0]))
+    start = new Startpoint([0,5], Constants.LaserDirection.E)
+    laser = new Laser('#F00', start)
+
+    p.manager.addEntity(start)
+    p.manager.addLaser(laser)
+
     p.drawTiles()
     p.drawEntities()
     
