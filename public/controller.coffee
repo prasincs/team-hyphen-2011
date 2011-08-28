@@ -6,8 +6,6 @@ $ ->
   reconstitute = (blank, data) -> data.__proto__ = blank
   
   notMyPlot = (plotId) ->
-    console.log plotId , "<-- plotId"
-    console.log UI.plots
     plot = UI.plots[plotId]
     plot
   
@@ -25,7 +23,6 @@ $ ->
 
   
   now.addEntity = (plotId, e) ->
-    console.log plotId, UI.localPlot.manager.id
     switch e.type
       when Constants.EntityType.MIRROR
         notMyPlot(plotId)?.mirror(e)
