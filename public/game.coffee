@@ -499,7 +499,6 @@ exports.LaserSegment = LaserSegment
 exports.Board = Board
 exports.Puzzle = Puzzle
 exports.Laser = Laser
-exports.Prism = Prism
 exports.Mirror = Mirror
 exports.Filter = Filter
 exports.GridEntity = GridEntity
