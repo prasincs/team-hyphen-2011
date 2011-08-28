@@ -54,9 +54,11 @@ class Plot
       @pen.translate((sx+t[0])*@scale, (sy+t[1])*@scale)
       @pen.rotate(angle)
 
+      length = Math.min(length*@scale, 500)
+
       i = ImageManager.get("laser-long")
       z = UI.zoomLevel
-      @pen.drawImage(i, 0, 0, length*@scale, 25, 0, -12.5*z, length*@scale, 25*z)
+      @pen.drawImage(i, 0, 0, length, 25, 0, -12.5*z, length, 25*z)
       @pen.restore()
     
     len = ([ex, ey]) ->
@@ -66,14 +68,15 @@ class Plot
       angle = (segment.direction-1) * Math.PI/2
       [sx, sy] = segment.start.position
       if segment.start.type is Constants.EntityType.START
+        l = if segment.end?.position then len(segment.end.position) + 1 else 11
         t = switch segment.direction
           when Constants.LaserDirection.N then [ 0.5,  0.5]
           when Constants.LaserDirection.S then [ 0.5, -0.5]
           when Constants.LaserDirection.W then [ 0.5,  0.5]
           when Constants.LaserDirection.E then [-0.5,  0.5]
-        lilLaser(angle, len(segment.end.position) + 1, t)
-      else if segment.end
-        l = len(segment.end.position) + 0.5
+        lilLaser(angle, l, t)
+      else if segment.end and segment.end.type isnt Constants.EntityType.END
+        l = len(segment.end.position)
         t = [0.5, 0.5]
         lilLaser(angle, l)
       else if not segment.end or segment.end.type is Constants.EntityType.END
