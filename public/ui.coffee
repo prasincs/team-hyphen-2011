@@ -241,9 +241,9 @@ UI =
       
     $("#give-up").click => @showStartDialog()
       
-    $("#palate li").click ->
+    $("#palette li").click ->
       UI.tool = $(this).data("tool")
-      $("#palate li").removeClass("selected")
+      $("#palette li").removeClass("selected")
       $(this).addClass("selected")
   
   zoom : () -> @zoomLevels[@zoomLevel]
