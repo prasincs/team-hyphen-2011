@@ -174,7 +174,7 @@ UI =
   
   updateRemainingEntities : ->
     if @localDiv
-      for e in $("#palate li")
+      for e in $("#palette li")
         e = $(e)
         name = Constants.EntityType[e.data("tool").toUpperCase()]
         e.find("span").text(@localPlot.manager.remainingEntities(name))
