@@ -370,11 +370,16 @@ serialize = (points=false,puzzle=false) ->
                      [puzzle.red.ends[0].  x,puzzle.red.ends[0].  y]]
         greenEdge = [[puzzle.green.start.  x,puzzle.green.start.  y],
                      [puzzle.green.ends[0].x,puzzle.green.ends[0].y]]
+        notSame = (a,b) -> a.x isnt b.x or a.y isnt b.y
+        len = dedup((a+'' for a in [redEdge[0],redEdge[1],greenEdge[0],greenEdge[1]]))
+        Assert.true(len is 4, 'endpoints aren\'t all unique')
         [elems,redEdge,greenEdge]
     catch e
         console.log("error generating + serializing puzzle, trying again:\n\t#{e}\n")
         # try again...
         serialize(points=points,if puzzleSet then puzzle else false)
+
+console.log(serialize(points=[-1,6,'e','red'])[1])
 
 exports ?= {}
 exports.serialize = serialize
