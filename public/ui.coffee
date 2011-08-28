@@ -291,7 +291,7 @@ UI =
     
     if old = @plots[manager.id || 1]
       $(old.front).parent().remove()
-    
+    console.log("manager-id "+ manager.id)
     @plots[manager.id || 1] = p
     
     #testing stuff

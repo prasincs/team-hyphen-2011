@@ -23,7 +23,7 @@ server.listen port
 nowjs    = require 'now'
 everyone = nowjs.initialize(server) #, {socketio: {'log level': 1}})
 
-
+lastPlotId = 1
 idMap = {}
 plots = {}
 lastPlot = [0,0] #get from database
@@ -38,8 +38,8 @@ assignPlot = (x,y, u)->
 userPlot = (u, assign = false) ->
   if assign
     assignPlot assign.gridX, assign.gridY, u
-  plots[idMap[u.clientId]] = assign if assign
-  plots[idMap[u.clientId]]
+  plots[u.clientId] = assign if assign
+  plots[u.clientId]
 
 
 
@@ -74,9 +74,18 @@ everyone.now.requestPlot = (difficulty) ->
   #  clientId:   @user.clientId,
   #  difficulty: difficulty
   #}
-  gm = new GameManager puzzle, x ,y
-  everyone.now.startPlot([x, y], puzzle, @user.clientId)
+  gm = new GameManager lastPlotId, puzzle, x ,y
+  everyone.now.startPlot lastPlotId , [x, y], puzzle, @user.clientId
+  lastPlotId+=1;
   userPlot @user, gm
+
+
+everyone.now.requestNeighborPlots = (id)->
+  for clientId, gm of plots
+    if  clientId != @user.clientId
+      console.log gm
+      everyone.now.drawPlot gm.id, [gm.gridX, gm.gridY], gm.puzzle, clientId
+
 
 everyone.now.entityAdded = (entity)->
   console.log "entity added " + entity.type
@@ -89,7 +98,7 @@ everyone.now.entityAdded = (entity)->
 
   plot = userPlot @user
   console.log plot
-  everyone.now.addEntity [plot.gridX, plot.gridY], et
+  everyone.now.addEntity plot.id, et
 
 everyone.now.entityRemoved = (x, y) ->
   everyone.now.removeEntity userPlot(@user), x, y
