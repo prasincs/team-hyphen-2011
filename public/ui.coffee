@@ -166,7 +166,8 @@ UI =
       
     $(document).bind 'contextmenu', -> false
     
-    $("#map").draggable({scroll: false})
+    $("#map").infiniDrag()
+    #$("#map").draggable({scroll: false})
 
     $(document).mousewheel (e, delta) =>
       if delta > 0
