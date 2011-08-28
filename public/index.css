@@ -28,7 +28,6 @@ body {
     height: 500px;
     margin: 0; padding: 0; border: none;
     position: absolute;
-    border: 5px solid #000;
 }
 
 header {
