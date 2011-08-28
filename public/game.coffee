@@ -12,112 +12,22 @@ class GameManager
     remainingEntities: (entityType) ->
         @puzzle.getMaxForType(entityType) - @numEntitiesByType[entityType]
 
-    deserializePuzzle: () ->
-        """
-            [
-                'STRANG',
-                [ RED EDGES
-                    [start x, start y],
-                    [end x, end y]
-                ],
-                [ BLUE EDGES
-                    [start x, start y],
-                    [end x, end y]
-                ]
-            ]
-        """
-
-        """
-            / -> Mirror NW
-            \\ -> Mirror SW
-            r -> Red Filter NW
-            R -> Red Filter NE
-            g -> Green Filter NW
-            G -> Green Filter NE
-            ^ -> Block
-            . -> Empty
-        """
-        translationTable =
-            '/'  : (position) -> return new Mirror(position, Constants.EntityOrient.NW, true)
-            '\\' : (position) -> return new Mirror(position, Constants.EntityOrient.SW, true)
-            'r'  : (position) -> return new Filter(position, Constants.EntityOrient.NW, Constants.Red, true)
-            'R'  : (position) -> return new Filter(position, Constants.EntityOrient.NE, Constants.Red, true)
-            'g'  : (position) -> return new Filter(position, Constants.EntityOrient.NW, Constants.Green, true)
-            'G'  : (position) -> return new Filter(position, Constants.EntityOrient.NE, Constants.Green, true)
-            'b'  : (position) -> return new Block(position)
-            '.'  : (position) -> return false
-
-        inferDirection = ([x,y]) ->
-            # Given position, infer the laser direction
-            top = (0 <= x < 10) and y < 0
-            bottom = (0 <= x < 10) and y >= 10
-
-            left = x < 0 and (0 <= y < 10)
-            right = x >= 10 and (0 <= y < 10)
-
-            if top
-                Constants.LaserDirection.S
-            else if bottom
-                Constants.LaserDirection.N
-            else if left
-                Constants.LaserDirection.E
-            else if right
-                Constants.LaserDirection.W
-
-        inferAcceptDirection = ([x, y]) ->
-            # Given position, infer the laser accept direction by just flipping
-            # the result of what the emit direction would be.
-            (inferDirection([x,y]) + 2) % 4
-
-        entities  = @puzzle.data[0]
-
-        [redStart, redEnd]  = @puzzle.data[1]
-
-        if @puzzle.data.length < 2
-            [blueStart, blueEnd] = @puzzle.data?[2]
-       
-        for i in [0...entities.length]
-            c = entities[i]
-            row = Math.floor(i / 10)
-            col = i % 10
-            @addEntity(translationTable[c]([row, col]))
-        
-        if redStart
-            redStartEntity = new Startpoint(redStart, inferDirection(redStart), Constants.Red)
-            @addEntity(redStartEntity)
-            @addLaser(new Laser(Constants.Red, redStartEntity))
-        if redEnd
-            @addEntity(new Endpoint(redEnd, inferAcceptDirection(redEnd), Constants.Red))
-        if blueStart
-            blueStartEntity = new Startpoint(blueStart, inferDirection(blueStart), Constants.Blue)
-            @addeEntity(blueStartEntity)
-            @addLaser(new Laser(Constants.Blue, blueStartEntity))
-        if blueEnd
-            @addEntity(new Endpoint(blueEnd, inferAcceptDirection(blueEnd), Constants.Blue))
-
-
     addEntity: (entity) ->
-        if entity is false
-            @board.setAt(entity)
-        else
-            succeeded = false
-            if entity.type is Constants.EntityType.START
-                @board.startpoints.push(entity)
-                succeeded = true
-            else if entity.type is Constants.EntityType.END
-                @board.endPoints.push(entity)
-                succeeded = true
-            else if !@getEntityAt(entity.position[0], entity.position[1])
-                if @numEntitiesByType[entity.type] < @puzzle.getMaxForType(entity.type)
-                       succeeded = @board.add(entity)
-                       @addToChanged(entity.position)
+        succeeded = false
+        if entity.type is Constants.EntityType.START
+            @board.startpoint = entity
+            succeeded = true
+        else if entity.type is Constants.EntityType.END
+            @board.endPoints.push(entity)
+            succeeded = true
+        else if !@getEntityAt(entity.position[0], entity.position[1])
+            if @numEntitiesByType[entity.type] < @puzzle.getMaxForType(entity.type)
+                   succeeded = @board.add(entity)
+                   @incrementEntityType(entity.type)
+                   @addToChanged(entity.position)
 
-            @traceAllLasers()
-            
-            if succeeded
-                @incrementEntityType(entity.type)
-
-            return succeeded
+        @traceAllLasers()
+        return succeeded
     
     reset: () ->
         e.satisfied = false for e in @board.endPoints
@@ -244,12 +154,11 @@ class GameManager
 
     removeEntityAt: (x, y) ->
         occupant = @board.getAt(x, y)
-        
         if occupant
-            unless occupant.static
-                @decrementEntityType(occupant.type)
-                @board.setAt(x, y, false)
-                @traceAllLasers()
+            @decrementEntityType(occupant.type)
+
+        @board.setAt(x, y, false)
+        @traceAllLasers()
     
     incrementEntityType: (type) ->
         @numEntitiesByType[type] += 1
@@ -258,20 +167,14 @@ class GameManager
         @numEntitiesByType[type] -= 1
     
     rotateEntityClockwise: (x, y) ->
-        entity = @getEntityAt(x, y)
-        if entity
-            unless entity.static
-                entity.rotateClockwise()
-                @traceAllLasers()
-                @addToChanged(x, y)
-    
+        @getEntityAt(x, y).rotateClockwise()
+        @traceAllLasers()
+        @addToChanged(x, y)
+
     rotateEntityCounterClockwise: (x, y) ->
-        entity = @getEntityAt(x, y)
-        if entity
-            unless entity.static
-                entity.rotateCounterClockwise()
-                @traceAllLasers()
-                @addToChanged(x, y)
+        @getEntityAt(x, y).rotateCounterClockwise()
+        @traceAllLasers()
+        @addToChanged(x, y)
 
     isSolved: (x, y) ->
         # Basic idea is to walk each laser and make sure the path has the following properties
@@ -329,7 +232,6 @@ class Board
     constructor: (@size) ->
         @grid = ((false for x in [0...@size]) for y in [0...@size])
 
-        @startpoints = []
         @endPoints = []
         @lasers = []
 
@@ -357,7 +259,7 @@ class Board
         return result[0]
         
 class Puzzle
-    constructor: (maxEntitiesNum = 1000, @data) ->
+    constructor: (maxEntitiesNum = 1000) ->
         # Actual values to be filled in once we get settled on a representation
         @maxEntitiesByType = {}
         (@maxEntitiesByType[k] = maxEntitiesNum) for _, k of Constants.EntityType
@@ -366,7 +268,7 @@ class Puzzle
         @maxEntitiesByType[entityType]
 
 class GridEntity
-    constructor: (@position, @orientation, @static) ->
+    constructor: (@position, @orientation, @mobility) ->
       @type ||= 0
     
     rotateTo: (orientation) ->
@@ -384,24 +286,24 @@ class GridEntity
 
 
 class Endpoint extends GridEntity
-    constructor: (@position, @acceptDirection, @color) ->
+    constructor: (@position) ->
         @type = Constants.EntityType.END
-        super(@position, 1, true)
+        super(@position, 1, false)
     
     accepts: (laser) -> true
 
 class Startpoint extends GridEntity
-    constructor: (@position, @direction, @color) ->
+    constructor: (@position, @direction) ->
         @type = Constants.EntityType.START
-        super(@position, 1, true)
+        super(@position, 1, false)
     
     accepts: (laser) -> true
     
 
 class Mirror extends GridEntity
-    constructor: (@position, @orientation, @static) ->
+    constructor: (@position, @orientation, @mobility) ->
         @type = Constants.EntityType.MIRROR
-        super(@position, @orientation, @static)
+        super(@position, @orientation, @mobility)
 
     accepts: (laser) -> false
     bounceDirection: (direction) ->
@@ -422,21 +324,21 @@ class Mirror extends GridEntity
 class Block extends GridEntity
     constructor: (@position) ->
         @type = Constants.EntityType.BLOCK
-        super(@position, 1, true)
+        super(@position, 1, false)
 
     accepts: (laser) -> false
         
 class Filter extends GridEntity
-    constructor: (@position, @orientation, @color, @static) ->
+    constructor: (@position, @orientation, @mobility, @color) ->
         @type = Constants.EntityType.FILTER
-        super(@position, @orientation, @static)
+        super(@position, @orientation, @mobility)
 
     accepts: (laser) -> laser.color == @color
 
 class Prism extends GridEntity
-    constructor: (@position, @orientation, @static) ->
+    constructor: (@position, @orientation, @mobility) ->
         @type = Constants.EntityType.PRISM
-        super(@position, @orientation, @static)
+        super(@position, @orientation, @mobility)
     
     splitDirection: (direction) ->
         result =

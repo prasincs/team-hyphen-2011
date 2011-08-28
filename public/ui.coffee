@@ -134,7 +134,10 @@ class Plot
     # display tool
     if !@manager.getEntityAt(x, y) and UI.tool
       @pen = @fp
-      @[UI.tool.toLowerCase()](new (window[UI.tool])([x,y], 1, true))
+      switch UI.tool
+          when 'Mirror' then @mirror(new Mirror([x,y],1,true))
+          when 'RedFilter'  then @filter(new Filter([x,y],1,true,Constants.Red))
+          when 'BlueFilter' then @filter(new Filter([x,y],1,true,Constants.Blue))
     
   clickHandler : (e) =>
     return if UI.zoomLevel > 1
@@ -149,7 +152,10 @@ class Plot
         @manager.rotateEntityClockwise(x, y)
         now.entityRotated x, y
     else if UI.tool
-      e = new (window[UI.tool])([x,y], 1, true)
+      e = switch UI.tool
+          when 'Mirror' then new Mirror([x,y],1,true)
+          when 'RedFilter'  then new Filter([x,y],1,true,Constants.Red)
+          when 'BlueFilter' then new Filter([x,y],1,true,Constants.Blue)
       @manager.addEntity e
       now.entityAdded e
       UI.tool = false
@@ -242,7 +248,7 @@ UI =
     $("#give-up").click => @showStartDialog()
       
     $("#palette li").click ->
-      UI.tool = $(this).data("tool")
+      UI.tool = $(this).data("color") + $(this).data("tool")
       $("#palette li").removeClass("selected")
       $(this).addClass("selected")
   
