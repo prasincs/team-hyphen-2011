@@ -27,8 +27,6 @@ $ ->
       reconstitute new Puzzle(1), puzzle
       manager = new GameManager(id, puzzle, x, y)
       manager.deserializePuzzle()
-      console.log id
-      console.log puzzle
       UI.addPlot manager
 
   
