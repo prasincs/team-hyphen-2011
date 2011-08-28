@@ -143,7 +143,6 @@ class Color
                     else Assert.error("illegal state(2)")
                 else Assert.error("at least one direction must be open: #{@parent.isOpen}")
                 coord2 = Rand.int(@parent.size-1)
-                console.log(": #{coord1} #{coord2} #{dir}")
                 pt = switch dir
                     when 'h' then new Pt1(coord1,coord2,dir,edge=true)
                     when 'v' then new Pt1(coord2,coord1,dir,edge=true)
