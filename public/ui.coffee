@@ -17,7 +17,6 @@ class Plot
     @drawQueue = []
     @resize()
     
-    
   resize : ->
     @size  = @front.height
     @scale = @size / 10.0
@@ -35,12 +34,12 @@ class Plot
     @pen = @mp
     @pen.clearRect 0, 0, @size, @size
     @drawQueue = []
+    for laser in @manager.board.lasers
+      @laser laser
     for x in [0..9]
       for y in [0..9]
         if e = @manager.getEntityAt(x, y)
           @[e.constructor.name.toLowerCase()](e)
-    for laser in @manager.board.lasers
-      @laser laser
     for fn in @drawQueue
       fn.apply(this, [])
   
@@ -86,18 +85,6 @@ class Plot
       else if not segment.end or segment.end.type is Constants.EntityType.END
         t = [0.5, 0.5]
         lilLaser(angle, 10)
-        
-      name = segment.end?.constructor.name
-      if name == 'Mirror' or name == 'Filter'
-        w = UI.zoom()/20
-        do (w, segment) =>
-          @drawQueue.push ->
-            @pen.save()
-            #@pen.rotate 
-            ImageManager.draw("laser-reflect-component-red", @pen,
-              (segment.end.position[0]+0.5)*@scale-w/2,
-              (segment.end.position[1]+0.5)*@scale-w/2, w, w )
-            @pen.restore()
     
 
   block : (e) ->
@@ -231,7 +218,7 @@ UI =
 
     $(document).mousewheel (e, delta) =>
       prev = @zoom() / 500.0
-      if delta > 0
+      if delta < 0
         @zoomLevel += 1 if @zoomLevel < 4
       else if @zoomLevel > 0
         @zoomLevel -= 1
