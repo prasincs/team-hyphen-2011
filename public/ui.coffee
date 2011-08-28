@@ -41,7 +41,7 @@ class Plot
     for sp in @manager.board.startpoints
       @startpoint sp
     for ep in @manager.board.endPoints
-      @startpoint ep
+      @endpoint ep
       
     for x in [0..9]
       for y in [0..9]
@@ -54,14 +54,33 @@ class Plot
   startpoint : (e) ->
     @pen.save()
     @pen.translate(e.position[0] * @scale, e.position[1] * @scale)
-    dir = e.direction || (e.acceptDirection + 2) % 4
+    dir = e.direction
     switch dir
       when 0 then @pen.translate @scale/2, @scale
       when 1 then @pen.translate 0, @scale/2
       when 2 then @pen.translate @scale/2, 0
       when 3 then @pen.translate @scale, @scale/2
-    @pen.scale(UI.zoom() / 500.0)
-    @pen.rotate((dir+3) * Math.PI/2)
+      
+    @pen.scale(UI.zoom() / 500.0, UI.zoom() / 500.0)
+    @pen.rotate((dir-1) * Math.PI/2)
+    @pen.translate @scale, 0
+
+    i = ImageManager.get("edge-#{e.color}")
+    @pen.drawImage(i, 0, -12.5)
+    @pen.restore()
+  
+  endpoint : (e) ->
+    @pen.save()
+    @pen.translate(e.position[0] * @scale, e.position[1] * @scale)
+    dir = (e.acceptDirection + 2) % 4
+    switch dir
+      when 0 then @pen.translate @scale/2, @scale
+      when 1 then @pen.translate 0, @scale/2
+      when 2 then @pen.translate @scale/2, 0
+      when 3 then @pen.translate @scale, @scale/2
+      
+    @pen.scale(UI.zoom() / 500.0, UI.zoom() / 500.0)
+    @pen.rotate((dir-1) * Math.PI/2)
     @pen.translate @scale, 0
 
     i = ImageManager.get("edge-#{e.color}")
@@ -221,7 +240,7 @@ UI =
   installHandlers : ->
     
     setInterval @updateSprintStatus, 1000
-      
+    
     $(document).bind 'contextmenu', -> false
     
     @nav = $.infinitedrag("#map", [-1000, -1000, 1000, 1000])

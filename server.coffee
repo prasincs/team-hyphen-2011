@@ -119,14 +119,15 @@ getNewPlot = ->
   plot
 
 
-
 everyone.now.requestPlot = (difficulty) ->
   [x,y] = getNewPlot()
   puzzle = new Puzzle(10, generator.serialize())
-  gm = new GameManager lastPlotId, puzzle, x ,y
+  gm = new GameManager lastPlotId, puzzle, x, y
+  gm.deserializePuzzle()
   everyone.now.startPlot plotId , [x, y], puzzle, @user.clientId
   assignPlot x,y, @user
   userPlot @user, gm
+  
 
 
 everyone.now.requestNeighborPlots = (id)->
@@ -160,6 +161,7 @@ everyone.now.entityRotated = (x, y) ->
   everyone.now.rotateEntity plot, x, y
   plot.rotateEntityClockwise(x,y)
   checkWinConditions(this)
+
 
 #everyone.now.validateSolution = (solution)->
 #  unimplemented
