@@ -67,7 +67,7 @@ class Plot
       angle = (segment.direction-1) * Math.PI/2
       [sx, sy] = segment.start.position
       if segment.start.type is Constants.EntityType.START
-        l = if segment.end?.position then len(segment.end.position) + 1 else 11
+        l = if segment.end?.position then len(segment.end.position) else 11
         t = [0.5, 0.5]
         switch segment.direction
           when Constants.LaserDirection.S then t[1] = -0.5
