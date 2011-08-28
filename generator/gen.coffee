@@ -47,11 +47,11 @@ class Pt1
             when 'h' then other.y is @y
             when 'v' then other.x is @x
 
-class Block
+class BlockObj
     constructor: (@x,@y) -> @type = 'block'
     toString: -> '#'
 
-class Mirror
+class MirrorObj
     constructor: (@x,@y,@direction) -> @type = 'mirror'
     toString: ->
         switch @orientation
@@ -71,9 +71,9 @@ class Mirror
         else if isRight and isDown then @orientation = 'se'
         else Assert.error("impossible case (setOrientation)")
     makeFilter: (color) ->
-        new Filter(color,@x,@y,@direction,@orientation)
+        new FilterObj(color,@x,@y,@direction,@orientation)
 
-class Filter extends Mirror
+class FilterObj extends MirrorObj
     constructor: (@color,@x,@y,@direction,@orientation) -> @type = 'filter'
     toString: -> 'f'
 
@@ -153,7 +153,7 @@ class Color
         prev = @start
         for m,i in pts[1...(pts.length-1)]
             [prev,next] = [pts[i],pts[i+2]]
-            mirror = new Mirror(m.x,m.y,m.dir)
+            mirror = new MirrorObj(m.x,m.y,m.dir)
             mirror.setOrientation(prev,next)
             @mirrors.push(mirror)
     makeFilters: ->
@@ -209,7 +209,7 @@ class Color
             point = @pickPoint(prev)
             @makePath(count-1,prev=point)
 
-class Puzzle
+class PuzzleObj
     constructor: (@count=4,@size=10,@start=false,@end=false,@difficulty='easy') ->
         @red   = new Color('red'  ,this)
         @red.make(@count)
@@ -237,11 +237,11 @@ class Puzzle
         points = @randomUnblockedPoints(count)
         for [x,y] in points
             if Rand.int(2) is 0
-                mirror = new Mirror(x,y)
+                mirror = new MirrorObj(x,y)
                 mirror.orientation = ['ne','nw','sw','se'][Rand.int(3)]
                 @static.push(mirror)
             else
-                @static.push(new Block(x,y))
+                @static.push(new BlockObj(x,y))
         for mirror in @red.mirrors.concat(@green.mirrors)
             if Rand.int(3) is 0 then @static.push(mirror)
                 
@@ -274,8 +274,50 @@ class Puzzle
         for line in board
             console.log(line.join(' '))
 
-p = new Puzzle()
+p = new PuzzleObj()
 p.printAscii()
 
+translationTable = {
+    '/':[MirrorObj,'nw'],
+    '\\':[MirrorObj,'ne'],
+    'r':[FilterObj,'red','nw'],
+    'R':[FilterObj,'red','ne'],
+    'g':[FilterObj,'green','nw'],
+    'G':[FilterObj,'green','ne'],
+    '^':[BlockObj,'b'],
+    '.':[''],
+    }
+
+    #[ 100 char string, [[x,y],[x,y]], [[x,y],[x,y]] ]
+
+serialize = (puzzle=false) =>
+    puzzle ||= new PuzzleObj()
+    elems = ('.' for i in [0...puzzle.size*puzzle.size])
+    for obj in puzzle.static
+        val = switch obj.type
+            when 'mirror'
+                switch obj.orientation
+                    when 'nw','se' then '/'
+                    when 'ne','sw' then '\\'
+            when 'block' then 'b'
+            when 'filter'
+                switch obj.color
+                    when 'green'
+                        switch obj.orientation
+                            when 'nw','se' then 'g'
+                            when 'ne','sw' then 'G'
+                    when 'red'
+                        switch obj.orientation
+                            when 'nw','se' then 'r'
+                            when 'ne','sw' then 'R'
+        pos = obj.x + obj.y*10
+        elems[pos] = val
+    redEdge = [puzzle.red.start,puzzle.red.ends[0]]
+    greenEdge = [puzzle.green.start,puzzle.green.ends[0]]
+    [elems,redEdge,greenEdge]
+
+console.log(serialize(p))
+
 exports ?= {}
+exports.serialize = serialize
 
