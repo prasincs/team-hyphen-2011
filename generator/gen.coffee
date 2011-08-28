@@ -70,6 +70,26 @@ class Mirror
         else if isLeft  and isDown then @orientation = 'sw'
         else if isRight and isDown then @orientation = 'se'
         else Assert.error("impossible case (setOrientation)")
+    makeFilter: (color) ->
+        new Filter(color,@x,@y,@direction,@orientation)
+
+class Filter extends Mirror
+    constructor: (@color,@x,@y,@direction,@orientation) -> @type = 'filter'
+    toString: -> 'f'
+
+class Prism
+    constructor: (@x,@y) -> @type = 'prism'
+    toString: ->
+        switch @orientation
+            when 'n' then '⊥'
+            when 'e' then '>'
+            when 's' then 'T'
+            when 'w' then '<'
+            else Assert.error("invalid orientation #{@orientation}")
+    setOrientation: (prev) ->
+        switch prev.dir
+            when 'h' then (if prev.x < @x then 'w' else 'e')
+            when 'v' then (if prev.y < @y then 'n' else 's')
     
 class Color
     constructor: (@color,@parent,endCount=1) ->
@@ -79,8 +99,8 @@ class Color
         @usedPoints = []
         @mirrors = []
         @addEndpoint() for i in [0...endCount]
-    pickStartpoint: => @start = @pickEdgepoint()
-    addEndpoint: =>
+    pickStartpoint: -> @start = @pickEdgepoint()
+    addEndpoint: ->
         Assert.exists(@start,'@start must be set before adding end points')
         @ends ?= []
         combined = @ends.concat([@start])
@@ -93,7 +113,7 @@ class Color
                 newExcl = ([x,end.y] for x in [0...@parent.size])
                 @excludedEnds = @excludedEnds.concat(newExcl)
         @ends.push(end)
-    pickEdgepoint: (excluded=[]) =>
+    pickEdgepoint: (excluded=[]) ->
         done = false
         until done
             dir = ['h','v'][Rand.int(1)]
@@ -106,7 +126,7 @@ class Color
             if (ex for ex in excluded when pt.check(ex)).length is 0 then done = true
         pt
     # gets a list of points in a line from start to end (inclusive of end points)
-    getLine: (start,end) =>
+    getLine: (start,end) ->
         switch start.dir
             when 'h'
                 Assert.true(start.y is end.y, "direction is h, y values should match")
@@ -116,15 +136,16 @@ class Color
                 ([start.x,y] for y in [start.y..end.y])
             else Assert.error("dir must be one of 'h' or 'v'")
     # does the work of creating the 'board'
-    make: (count,prev=undefined) =>
+    make: (count,prevUsed=[],prevEdges=[]) ->
         # TODO: remove this assert
         Assert.true(@ends.length is 1,"only 1 endpoint supported (for now)")
-        prev ?= @start
-        @makePath(count,prev)
+        @usedPoints = @usedPoints.concat(prevUsed)
+        @excludedEnds = @excludedEnds.concat(prevEdges)
+        @makePath(count,@start)
         @makeMirrors()
         # TODO: finish up actual solution generation here
     # makes actual mirror objects from the solution points
-    makeMirrors: =>
+    makeMirrors: ->
         pts = (x for x in @solutionPoints)
         pts.unshift(@start)
         # TODO: make this work with multiple ends
@@ -135,7 +156,25 @@ class Color
             mirror = new Mirror(m.x,m.y,m.dir)
             mirror.setOrientation(prev,next)
             @mirrors.push(mirror)
-    pickPenultimate: (prev,end) =>
+    makeFilters: ->
+        inList = (obj,list) ->
+            Assert.exists(list,'list is undefined')
+            Assert.exists(list[0],'list is empty')
+            Assert.exists(list[0][0],'incorrect points list format')
+            Assert.exists(obj[0],'obj is of incorrect format')
+            for elem in list
+                if elem[0] is obj[0] and elem[1] is obj[1] then return true
+            false
+        if @color is 'green'
+            used = @parent.red.usedPoints
+        else
+            used = [pt for pt in @parent.green.usedPoints when not inList(pt,@usedPoints)]
+        Assert.true(used.length > 0,'no used points...that seems dubious')
+        for mirror,i in @mirrors
+            if inList([mirror.x,mirror.y],used)
+                filter = mirror.makeFilter(@color)
+                @mirrors[i] = filter
+    pickPenultimate: (prev,end) ->
         # then we need to add another point first
         if prev.dir is end.dir then prev = @pickPoint(prev)
         pt = switch prev.dir
@@ -145,7 +184,7 @@ class Color
         @usedPoints = @usedPoints.concat(@getLine(prev,pt)).concat(@getLine(pt,end))
         @solutionPoints.push(pt)
         pt
-    pickPoint: (prev) =>
+    pickPoint: (prev) ->
         used = @usedPoints.concat(@excludedEnds)
         pt = switch prev.dir
             when 'h'
@@ -162,7 +201,7 @@ class Color
         @usedPoints = @usedPoints.concat(@getLine(prev,pt))
         @solutionPoints.push(pt)
         pt
-    makePath: (count,prev) =>
+    makePath: (count,prev) ->
         if count is 1
             # TODO: make this work with multiple endings
             @pickPenultimate(prev,@ends[0])
@@ -173,39 +212,45 @@ class Color
 class Puzzle
     constructor: (@count=4,@size=10,@start=false,@end=false,@difficulty='easy') ->
         @red   = new Color('red'  ,this)
-        #@green = new Color('green',this)
-        #@blue  = new Color('blue' ,this)
         @red.make(@count)
-        @static = []
+        @green = new Color('green',this)
+        @green.make(@count,@red.usedPoints,@red.excludedEnds)
+        @green.makeFilters()
+        @red.makeFilters()
         @makeStatic()
-
 
     randomPoint: -> [Rand.int(@size-1),Rand.int(@size-1)]
     randomUnblockedPoints: (count) ->
         # TODO: make this support multiple colors
-        blockedStrs = ((b+'') for b in @red.usedPoints)
+        blocked = ((false for i in [0...@size]) for j in [0...@size])
+        for [x,y] in @green.usedPoints.concat(@red.usedPoints)
+            blocked[x][y] = true if -1 < x < @size and -1 < y < @size
         points = []
         while points.length < count
-            point = @randomPoint()
-            if (point+'') not in blockedStrs
+            point = [x,y] = @randomPoint()
+            if not blocked[x][y]
                 points.push(point)
-                blockedStrs.push(point+'')
+                blocked[x][y] = true
         points
-    makeStatic: (count=20) ->
-        for [x,y] in @randomUnblockedPoints(count)
+    makeStatic: (count=30) ->
+        @static = []
+        points = @randomUnblockedPoints(count)
+        for [x,y] in points
             if Rand.int(2) is 0
                 mirror = new Mirror(x,y)
                 mirror.orientation = ['ne','nw','sw','se'][Rand.int(3)]
                 @static.push(mirror)
             else
                 @static.push(new Block(x,y))
-        for mirror in @red.mirrors
+        for mirror in @red.mirrors.concat(@green.mirrors)
             if Rand.int(3) is 0 then @static.push(mirror)
                 
 
     # maybe TODO: print out things that aren't from the red part
     printAscii: ->
         board = (('.' for i in [0...(@size+2)]) for j in [0...(@size+2)])
+        #for [x,y] in @green.usedPoints
+        #    board[x+1][y+1] = '$'
         #for [x,y] in @red.usedPoints
         #    board[x+1][y+1] = '!'
         #for mirror in @red.mirrors
@@ -213,14 +258,19 @@ class Puzzle
         #        when 'nw','se' then '/'
         #        when 'ne','sw' then '\\'
         #        else Assert.error("orientation must be one of ne,sw,nw,se (is #{mirror.orientation})")
+        #for mirror in @green.mirrors
+        #    board[mirror.x+1][mirror.y+1] = switch mirror.orientation
+        #        when 'nw','se' then '/'
+        #        when 'ne','sw' then '\\'
+        #        else Assert.error("orientation must be one of ne,sw,nw,se (is #{mirror.orientation})")
         for static in @static
             space = board[static.x+1][static.y+1]
-            if space isnt '.' then Assert.error("static elements shouldn't cover things (#{space}) up!")
+            if space isnt '.' then Assert.error("static elements shouldn't cover things (#{space}, #{static.x},#{static.y}) up!")
             board[static.x+1][static.y+1] = static.toString()
-        s = @red.start
-        e = @red.ends[0]
-        board[s.x+1][s.y+1] = 's'
-        board[e.x+1][e.y+1] = 'e'
+        board[@red.start.x+1][@red.start.y+1] = 's'
+        board[@red.ends[0].x+1][@red.ends[0].y+1] = 'e'
+        board[@green.start.x+1][@green.start.y+1] = '1'
+        board[@green.ends[0].x+1][@green.ends[0].y+1] = '2'
         for line in board
             console.log(line.join(' '))
 
