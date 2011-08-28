@@ -13,7 +13,9 @@ $ ->
   
   now = window.now ?= {}
 
-  now.startPlot = (id, [x, y], puzzle, clientId) ->
+  now.startPlot = (id, coords, puzzle, clientId) ->
+    x = coords[0]
+    y = coords[1]
     reconstitute new Puzzle(1), puzzle
     UI.addPlot new GameManager(id, puzzle, x, y), now.core.clientId == clientId
     now.requestNeighborPlots id

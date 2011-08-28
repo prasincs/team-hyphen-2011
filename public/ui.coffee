@@ -295,6 +295,7 @@ UI =
     @plots[manager.id || 1] = p
     
     #testing stuff
+    """
     p.manager.addEntity(new Mirror([5,5], Constants.EntityOrient.NE))
     p.manager.addEntity(new Endpoint([5,0]))
     start = new Startpoint([0,5], Constants.LaserDirection.E)
@@ -305,6 +306,7 @@ UI =
 
     p.drawTiles()
     p.drawEntities()
+    """
     
     @dims = [Math.max(@dims[0], 1+manager.gridX),
              Math.max(@dims[1], 1+manager.gridY)]
