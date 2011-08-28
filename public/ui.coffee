@@ -135,7 +135,7 @@ class Plot
     if !@manager.getEntityAt(x, y) and UI.tool
       @pen = @fp
       switch UI.tool
-        when 'Mirror' then @mirror(new Mirror([x,y],1,true))
+        when 'Mirror' then @mirror(new Mirror([x,y],1, false))
         when 'RedFilter'  then @filter(new Filter([x,y],1,Constants.Red, false))
         when 'BlueFilter' then @filter(new Filter([x,y],1,Constants.Blue, false))
     
