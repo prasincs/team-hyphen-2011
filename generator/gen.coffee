@@ -1,4 +1,4 @@
-debug = false
+debug = true 
 
 Assert = {}
 Assert.error = (msg) ->
@@ -208,7 +208,7 @@ class Color
         @usedPoints = @usedPoints.concat(@getLine(prev,pt)).concat(@getLine(pt,end))
         @solutionPoints.push(pt)
         pt
-    pickPoint: (prev) ->
+    pickPoint: (prev) =>
         used = @usedPoints.concat(@excludedEnds)
         pt = switch prev.dir
             when 'h'
@@ -235,19 +235,18 @@ class Color
 
 class PuzzleObj
     constructor: (points=false,@count=4,@size=10,@start=false,@end=false,@difficulty='easy') ->
+        @size ?= 10
         @isOpen = {n:true,e:true,s:true,w:true}
         @redEdges = []
         @greenEdges = []
         if points
             for [x,y,dir,color] in points
-                Assert.exists(color,"invalid edge points format!")
                 @isOpen[dir] = false
                 switch dir
                     when 'n' then y += @size + 1
                     when 'e' then x += @size + 1
                     when 's' then y -= @size + 1
                     when 'w' then x -= @size + 1
-                    else Assert.error("invalid direction")
                 if (-1 <= x <= @size and 0 <= y <= @size-1) or
                    (0 <= x <= @size-1 and -1 <= y <= @size)
                     dir = if x is -1 or x is @size then 'h' else 'v'
@@ -371,7 +370,7 @@ serialize = (points=false,puzzle=false) ->
         greenEdge = [[puzzle.green.start.  x,puzzle.green.start.  y],
                      [puzzle.green.ends[0].x,puzzle.green.ends[0].y]]
         notSame = (a,b) -> a.x isnt b.x or a.y isnt b.y
-        len = dedup((a+'' for a in [redEdge[0],redEdge[1],greenEdge[0],greenEdge[1]]))
+        len = Util.dedup((a+'' for a in [redEdge[0],redEdge[1],greenEdge[0],greenEdge[1]])).length
         Assert.true(len is 4, 'endpoints aren\'t all unique')
         [elems,redEdge,greenEdge]
     catch e
