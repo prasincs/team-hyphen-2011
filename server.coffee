@@ -78,6 +78,9 @@ everyone.now.requestPlot = (difficulty) ->
   everyone.now.startPlot([x, y], puzzle, @user.clientId)
   userPlot @user, gm
 
+
+
+
 everyone.now.entityAdded = (entity)->
   console.log "entity added " + entity.type
   [x,y] = entity.position
