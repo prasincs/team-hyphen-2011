@@ -68,7 +68,7 @@ class Plot
       angle = (segment.direction-1) * Math.PI/2
       [sx, sy] = segment.start.position
       if segment.start.type is Constants.EntityType.START
-        l = if segment.end?.position then len(segment.end.position) + 1 else 11
+        l = if segment.end?.position then len(segment.end.position) + 0.76 else 11
         t = switch segment.direction
           when Constants.LaserDirection.N then [ 0.5,  0.5]
           when Constants.LaserDirection.S then [ 0.5, -0.5]
@@ -76,8 +76,12 @@ class Plot
           when Constants.LaserDirection.E then [-0.5,  0.5]
         lilLaser(angle, l, t)
       else if segment.end and segment.end.type isnt Constants.EntityType.END
-        l = len(segment.end.position)
-        t = [0.5, 0.5]
+        l = len(segment.end.position) - 0.5
+        t = switch segment.direction
+          when Constants.LaserDirection.N then [ 0.5, 0.25]
+          when Constants.LaserDirection.S then [ 0.5, 0.75]
+          when Constants.LaserDirection.W then [ 0.25, 0.5]
+          when Constants.LaserDirection.E then [ 0.75, 0.5]
         lilLaser(angle, l)
       else if not segment.end or segment.end.type is Constants.EntityType.END
         t = [0.5, 0.5]
@@ -88,9 +92,12 @@ class Plot
         w = 25*UI.zoomLevel
         do (w, segment) =>
           @drawQueue.push ->
+            @pen.save()
+            #@pen.rotate 
             ImageManager.draw("laser-reflect-component-red", @pen,
-            (segment.end.position[0]+0.5)*@scale-w/2,
-            (segment.end.position[1]+0.5)*@scale-w/2, w, w )
+              (segment.end.position[0]+0.5)*@scale-w/2,
+              (segment.end.position[1]+0.5)*@scale-w/2, w, w )
+            @pen.restore()
     
 
   block : (e) ->
@@ -245,14 +252,7 @@ UI =
       o.top  += centerY - y
       
       d.offset(o)
-        
-      $("canvas").attr width: 500*@zoomLevel, height: 500*@zoomLevel
-      for plot in @plots when plot
-        plot.resize()
-        d = 500 * @zoomLevel
-        $(plot.front).parent().css left: "#{Math.round(d*plot.manager.gridX)}px", top: "#{Math.round(d*plot.manager.gridY)}px"
-
-      @draw()
+      @resizePlots()
       
     $("#give-up").click => @showStartDialog()
       
@@ -260,6 +260,20 @@ UI =
       UI.tool = $(this).data("tool")
       $("#palate li").removeClass("selected")
       $(this).addClass("selected")
+  
+  resizePlots : ->
+    $("canvas").attr width: 500*@zoomLevel, height: 500*@zoomLevel
+    for plot in @plots when plot
+      plot.resize()
+      d = 510 * @zoomLevel
+      css =
+        left: Math.round(d*plot.manager.gridX)
+        top: Math.round(d*plot.manager.gridY)
+        width:  500*@zoomLevel
+        height: 500*@zoomLevel
+        borderWidth: Math.ceil(5 * @zoomLevel)
+      $(plot.front).parent().css(css)
+    @draw()
   
   scrollTo : ($e) ->    
     offset = $e.offset()
@@ -302,6 +316,7 @@ UI =
       $(old.front).parent().remove()
     @plots[manager.id] = p
     
+    
     #testing stuff
     p.manager.addEntity(new Mirror([5,5], Constants.EntityOrient.NE))
     p.manager.addEntity(new Endpoint([5,0]))
@@ -318,4 +333,5 @@ UI =
              Math.max(@dims[1], 1+manager.gridY)]
                       
     $div.css left: p.size*manager.gridX, top: p.size*manager.gridY
+    @resizePlots()
     @scrollTo(@localDiv) if mine
