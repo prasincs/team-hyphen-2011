@@ -35,9 +35,9 @@ class Plot
     @pen.clearRect 0, 0, @size, @size
     @drawQueue = []
   
-    for laser in @manager.board.lasers when laser.color is 'blue'
+    for laser in @manager.board.lasers when laser.color is Constants.Blue
       @laser laser
-    for laser in @manager.board.lasers when laser.color is 'red'
+    for laser in @manager.board.lasers when laser.color is Constants.Red
       @laser laser
       
     for x in [0..9]
@@ -149,7 +149,7 @@ class Plot
         @manager.rotateEntityClockwise(x, y)
         now.entityRotated x, y
     else if UI.tool
-      e = new (window[UI.tool])([x,y], 1, true)
+      e = new (window[UI.tool])([x,y], 1, false)
       @manager.addEntity e
       now.entityAdded e
       UI.tool = false
