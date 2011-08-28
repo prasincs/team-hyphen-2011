@@ -34,8 +34,12 @@ class Plot
     @pen = @mp
     @pen.clearRect 0, 0, @size, @size
     @drawQueue = []
-    for laser in @manager.board.lasers
+  
+    for laser in @manager.board.lasers when laser.color is 'blue'
       @laser laser
+    for laser in @manager.board.lasers when laser.color is 'red'
+      @laser laser
+      
     for x in [0..9]
       for y in [0..9]
         if e = @manager.getEntityAt(x, y)
@@ -55,7 +59,7 @@ class Plot
 
       length = Math.min(length*@scale, 500)
 
-      i = ImageManager.get("laser-long")
+      i = ImageManager.get("laser-long-#{e.color}")
       z = UI.zoom() / 500
       @pen.drawImage(i, 0, 0, length, 25, 0, -12.5*z, length, 25*z)
       @pen.restore()
