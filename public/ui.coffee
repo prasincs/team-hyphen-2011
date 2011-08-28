@@ -146,7 +146,7 @@ class Plot
       @manager.addEntity e
       now.entityAdded e
       UI.tool = false
-      $("#palate li").removeClass("selected")
+      $("#palette li").removeClass("selected")
     else
         return
       
