@@ -51,15 +51,6 @@ class GameManager
 
         dy = 0
         dx = 0
-        x = startPoint.position[0]
-        y = startPoint.position[1]
-        branches = []
-        
-        unless laser.segments.length
-            firstSeg = new LaserSegment(laser.startpoint, null, laser, currDir)
-            laser.segments.push(firstSeg)
-
-
         mapDir = (dir) ->
             dirs = Constants.LaserDirection
             switch dir
@@ -75,11 +66,19 @@ class GameManager
                 when dirs.E
                     dy = 0
                     dx = 1
+        mapDir(currDir)
+        x = startPoint.position[0] + dx
+        y = startPoint.position[1] + dy
+        branches = []
+        
+        unless laser.segments.length
+            firstSeg = new LaserSegment(laser.startpoint, null, laser, currDir)
+            laser.segments.push(firstSeg)
+
+
  
         while(x >= 0 and y >= 0 and x < @board.size and y < @board.size)
             mapDir(currDir)
-            x += dx
-            y += dy
             current = @board.getAt(x, y)
             unless current
                 current = @board.getEndPoint(x, y)
@@ -130,6 +129,9 @@ class GameManager
                         laser.segments.push(seg)
 
                         break
+            mapDir(currDir)
+            x += dx
+            y += dy
         if branches.length
             laser.merge(branches)
 
