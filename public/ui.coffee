@@ -23,10 +23,10 @@ class Plot
     @scale = @size / 10.0
   
   drawTiles : ->
-    @bp.fillStyle = '#ddd'
+    @bp.fillStyle = '#222'
     @bp.fillRect 0, 0, @size, @size
     
-    @bp.fillStyle = '#eee'
+    @bp.fillStyle = '#111'
     for x in [0..10]
       for y in [x%2..10] by 2
         @bp.fillRect x*@scale, y*@scale, @scale, @scale

@@ -18,8 +18,8 @@ body {
     cursor: pointer !important;
 }
 .fg { z-index: 12; }
-.local .fg {background: rgba(100,255,100,0.1);}
-.local .fg:hover {background: transparent;}
+.fg {}
+.local .fg {}
 .mg { z-index: 11; }
 .bg { z-index: 10; }
 
@@ -45,27 +45,27 @@ header {
         list-style-type: none;
         padding: 0; margin: 0;
     }
-    #palate {
+    #palette {
         list-style-type: none;
         margin: 0; padding: 0;
     }
-        #palate li {
+        #palette li {
             font-size: 24px;
             margin: 0 10px 15px 0 ; padding: 0;
             text-align: right;
         }
-        #palate li.selected {
+        #palette li.selected {
           background: #00ffaa;
         }
-            #palate li:hover {
+            #palette li:hover {
                 background: #ffff00;
                 cursor: pointer;
             }
-            #palate li span {
+            #palette li span {
                 margin: 0 0 0 5px;
             }
-                #palate li span::before { content: "(" }
-                #palate li span::after  { content: ")" }
+                #palette li span::before { content: "(" }
+                #palette li span::after  { content: ")" }
 
 #wrapper {
     width: 100%;
