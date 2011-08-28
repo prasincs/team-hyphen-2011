@@ -289,8 +289,19 @@ translationTable = {
 
     #[ 100 char string, [[x,y],[x,y]], [[x,y],[x,y]] ]
 
-serialize = (puzzle=false) =>
-    puzzle ||= new PuzzleObj()
+getPuzzleSafe = ->
+    unsafe = true
+    while unsafe
+        try
+            p = new PuzzleObj()
+            unsafe = false
+        catch e
+            unsafe = true
+    p
+
+serialize = (puzzle=false) ->
+    puzzle ||= getPuzzleSafe()
+        
     elems = ('.' for i in [0...puzzle.size*puzzle.size])
     for obj in puzzle.static
         val = switch obj.type
