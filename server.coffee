@@ -158,7 +158,7 @@ everyone.now.entityRemoved = (x, y) ->
   
 everyone.now.entityRotated = (x, y) ->
   plot = userPlot(@user)
-  everyone.now.rotateEntity plot, x, y
+  everyone.now.rotateEntity plot.id, x, y
   plot.rotateEntityClockwise(x,y)
   checkWinConditions(this)
 
