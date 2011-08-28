@@ -14,10 +14,14 @@ $ ->
   now = window.now ?= {}
 
   now.startPlot = (id, [x, y], puzzle, clientId) ->
-    if not UI.localPlot
-      now.requestNeighborPlots id
     reconstitute new Puzzle(1), puzzle
     UI.addPlot new GameManager(id, puzzle, x, y), now.core.clientId == clientId
+    now.requestNeighborPlots id
+
+  now.drawPlot = (id, [x,y], puzzle, clientId) ->
+    reconstitute new Puzzle(1), puzzle
+    if clientId != now.core.clientId
+      UI.addPlot new GameManager(id, puzzle, x, y)
 
   
   now.addEntity = (plotId, e) ->
