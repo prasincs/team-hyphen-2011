@@ -80,6 +80,11 @@ everyone.now.requestPlot = (difficulty) ->
   userPlot @user, gm
 
 
+everyone.now.requestNeighborPlots = (id)->
+  for clientId, gm of plots
+    if  clientId != @user.clientId
+      console.log gm
+      everyone.now.startPlot gm.id, [gm.gridX, gm.gridY], gm.puzzle, clientId
 
 
 everyone.now.entityAdded = (entity)->
