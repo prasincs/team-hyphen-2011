@@ -37,6 +37,11 @@ class Plot
       @laser laser
     for laser in @manager.board.lasers when laser.color is Constants.Red
       @laser laser
+    
+    for sp in @manager.board.startpoints
+      @startpoint sp
+    for ep in @manager.board.endPoints
+      @startpoint ep
       
     for x in [0..9]
       for y in [0..9]
@@ -45,6 +50,24 @@ class Plot
   
   drawImage : (name, x, y) ->
     ImageManager.draw(name, @pen, x*@scale, y*@scale, @scale, @scale)
+  
+  startpoint : (e) ->
+    console.log e
+    @pen.save()
+    @pen.translate(e.position[0] * @scale, e.position[1] * @scale)
+    dir = e.direction || (e.acceptDirection + 2) % 4
+    switch dir
+      when 0 then @pen.translate @scale/2, @scale
+      when 1 then @pen.translate 0, @scale/2
+      when 2 then @pen.translate @scale/2, 0
+      when 3 then @pen.translate 0, 0
+    @pen.scale(UI.zoom() / 500.0)
+    @pen.rotate((dir+3) * Math.PI/2)
+    @pen.translate @scale, 0
+
+    i = ImageManager.get("edge-#{e.color}")
+    @pen.drawImage(i, 0, -12.5)
+    @pen.restore()
   
   laser : (e) ->
     lilLaser = (angle, length) =>
@@ -87,7 +110,6 @@ class Plot
     @drawImage "block", x, y
     
   mirror : (e) ->
-    console.log e
     [x, y] = e.position
     @pen.save()
     @pen.translate((x+0.5) * @scale, (y+0.5) * @scale)
