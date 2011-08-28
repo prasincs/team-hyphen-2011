@@ -275,7 +275,6 @@ class PuzzleObj
             console.log(line.join(' '))
 
 p = new PuzzleObj()
-p.printAscii()
 
 translationTable = {
     '/':[MirrorObj,'nw'],
