@@ -8,4 +8,16 @@ db.bind('users', {
   }
 });
 
+db.bind('plots', {
+  addPlot: function (plot, fn){
+    this.insert(plot);
+    fn;
+  },
+  setLastPlot: function(coords,fn){
+    this.update
+  }
+
+});
+
 exports.users = db.users;
+exports.plots =db.plots;

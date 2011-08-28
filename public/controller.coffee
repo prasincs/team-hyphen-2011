@@ -19,6 +19,7 @@ $ ->
     manager.deserializePuzzle()
 
     UI.addPlot manager, now.core.clientId == clientId
+    UI.draw()
     now.requestNeighborPlots id
 
   now.drawPlot = (id, [x,y], puzzle, clientId) ->
