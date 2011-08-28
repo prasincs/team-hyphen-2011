@@ -320,10 +320,10 @@ serialize = (puzzle=false) ->
                             when 'ne','sw' then 'R'
         pos = obj.x + obj.y*10
         elems[pos] = val
-    redEdge = [[puzzle.red.start.x,puzzle.red.start.y],
-               [puzzle.red.ends[0].x,puzzle.red.ends[0].y]]
-    greenEdge = [[puzzle.green.start.x,puzzle.green.start.y],
-                 [puzzle.green.ends[0].x,puzzle.green.ends[0].y]]
+    redEdge   = [[puzzle.red.start.y    , puzzle.red.start.x],
+                 [puzzle.red.ends[0].y  ,puzzle.red.ends[0].x]]
+    greenEdge = [[puzzle.green.start.y  ,puzzle.green.start.x],
+                 [puzzle.green.ends[0].y,puzzle.green.ends[0].x]]
     [elems,redEdge,greenEdge]
 
 exports ?= {}
