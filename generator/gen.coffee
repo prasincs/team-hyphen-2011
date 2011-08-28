@@ -316,7 +316,6 @@ serialize = (puzzle=false) =>
     [elems,redEdge,greenEdge]
 
 #serialize(p)
-console.log(serialize(p))
 
 exports ?= {}
 exports.serialize = serialize
